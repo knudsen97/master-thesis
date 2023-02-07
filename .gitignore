@@ -164,5 +164,8 @@ cython_debug/
 
 
 # Ignore dataset
-data
-data/
+_data*
+_data*/
+
+# Ignore hidden folders
+_*
