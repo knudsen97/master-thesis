@@ -91,7 +91,7 @@ int main()
     predictionProcessor.computeCenters(prediction, centers);
     
     // Create two circles at the center of the two largest green objects
-    int circleId = 2;
+    int circleId = 5;
     cv::circle(prediction, centers[circleId], 10, cv::Scalar(255, 0, 255), 2);
     // cv::circle(prediction, centers[1], 5, cv::Scalar(255, 0, 255), 2);
 
@@ -108,25 +108,15 @@ int main()
     // Find depth of the largest green object
     int depth = depthMap.at<int16_t>(centers[circleId].x, centers[circleId].y);
 
-    // Find largest depth in depth map
-    // int maxDepth = 0;
-    // for (int col = 0; col < depthMap.cols; col++)
-    // {
-    //     for (int row = 0; row < depthMap.rows; row++)
-    //     {
-    //         if (depthMap.at<int16_t>(row, col) > maxDepth)
-    //         {
-    //             maxDepth = depthMap.at<int16_t>(row, col);
-    //         }
-    //     }
-    // }
-
     // Calculate the 3D position of the largest green object
     double depthd = depth * 1e-4;
     cv::Point3d point3D = pixel2World(centers[circleId], cameraIntrinsics, depthd);
 
     // Print the 3D position of the largest green object
     std::cout << "3D position of the largest green object: " << point3D << std::endl;
+
+    // Surface normal of the largest green object
+    // TODO: MAKE THIS
 
 
     // show the image and depth map
