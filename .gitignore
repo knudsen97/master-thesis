@@ -1,5 +1,16 @@
 # Other cutsom things 
-.vscode/*
+*.vscode/*
+*.png
+*.pth
+*images/*
+*depth/*
+
+# Ignore dataset
+_data*
+_data*/
+
+# Ignore hidden folders
+_*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -163,9 +174,3 @@ cython_debug/
 #.idea/
 
 
-# Ignore dataset
-_data*
-_data*/
-
-# Ignore hidden folders
-_*
