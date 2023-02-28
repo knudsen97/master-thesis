@@ -2,12 +2,11 @@ import bpy
 import numpy as np
 import math
 from mathutils import Vector
-# test
 
 face_coord_gt_red = np.array([[0.00, 0.00], [0.0, 1.00], [0.50, 1.00], [0.50, 0.00]])
 face_coord_gt_green = np.array([[0.5, 0.00], [0.5, 1.00], [1.00, 1.00], [1.00, 0.00]])
 
-OBJECT_ANGLE_SUCTION_THRESHOLD = 1/8 * math.pi
+OBJECT_ANGLE_SUCTION_THRESHOLD = 2*math.pi/8
 
 
 def update_face_color(faces, uv_layer, color):
@@ -38,7 +37,6 @@ def classify_faces(faces, rotation = None):
     """
     green_faces = []
     red_faces = []
-    
     # Find the angle of each faces
     print(f"from classify_faces: len(faces): {len(faces)}")
     for face in faces:
@@ -48,12 +46,15 @@ def classify_faces(faces, rotation = None):
             normal = rotation @ normal
         print(f"normal: {normal}")
 
-        angle = math.acos(normal.dot((0, 0, 1))) # Calculate the angle relative to the XY plane
+        # angle = math.acos(normal.dot((0, 0, 1))) # Calculate the angle relative to the XY plane
+        angle = normal.angle(Vector((0, 0, 1)))
+        print(f"angle: {angle}")
         # if obj.name == "box.086":
         #     print(f"Box: {obj.name} face: {face.index} angle: {angle} radians")
         if -OBJECT_ANGLE_SUCTION_THRESHOLD < angle < OBJECT_ANGLE_SUCTION_THRESHOLD:
             green_faces.append(face)
         else:
+            print(f"not in threshold was: {angle}")
             red_faces.append(face)
     return green_faces, red_faces
 
@@ -123,7 +124,6 @@ scene = bpy.context.scene
 # Get depsgraph
 depsgraph = bpy.context.evaluated_depsgraph_get()
 
-# Define offset
 
 for box in box_objects:
     mesh = box.data
@@ -149,6 +149,9 @@ for box in box_objects:
             print(f"box: {box.name}: hit 100 times")
             break
 
+    # start with all face red
+    update_face_color(mesh.polygons, uv_layer, face_coord_gt_red)
+
     if not hit:
         # Find top faces based on top vertex
         top_faces = get_top_faces(mesh, transform)
@@ -156,7 +159,3 @@ for box in box_objects:
 
         update_face_color(green_faces, uv_layer, face_coord_gt_green)
         update_face_color(red_faces, uv_layer, face_coord_gt_red)    
-
-    else: # If hit, set all faces to red
-        update_face_color(mesh.polygons, uv_layer, face_coord_gt_red)
-        print(f"box: {box.name}: set to full red")
