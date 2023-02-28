@@ -3,58 +3,6 @@ import os
 import numpy as np
 import open3d as o3d
 
-class PredictionProcessor:
-    def __init__(self, extrinsics, intrinsics, lowerBound=(40, 30, 30), upperBound=(80, 255, 255)):
-        self.extrinsic = extrinsics
-        self.intrinsic = intrinsics
-
-        # Lower and upper bounds for HSV color range
-        self.lowerBound = lowerBound
-        self.upperBound = upperBound
-
-
-    # Returns a sorted list of centroids for the largest connected components in the prediction (largest to smallest)
-    def computeCentroids(self, image):
-        # Preprocess image
-        hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-
-        # Filter green pixels in hsv image
-        mask = cv2.inRange(hsv, self.lowerBound, self.upperBound)
-
-        # Find connected components in mask
-        n_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(mask)
-
-        # Sort centroids by area (descending) using stats[:, cv2.CC_STAT_AREA]
-        centroids_sorted = centroids[stats[:, cv2.CC_STAT_AREA].argsort()[::-1]]
-
-        return centroids_sorted
-
-    def pixel2CameraCoordinate(self, pixel, depth):
-        # Convert pixel to homogeneous coordinates
-        pixel_homogeneous = np.array([pixel[0], pixel[1], 1])
-
-        # Compute world coordinates
-        camera_point_homogeneous = np.linalg.inv(self.intrinsic) @ pixel_homogeneous * depth
-
-        return camera_point_homogeneous
-
-    def computeTransformationMatrix(self, world, n_avg):
-        # Compute rotation matrix
-        R = np.identity(3)
-        R[2, :] = n_avg
-        R[0, :] = np.cross(R[2, :], np.array([0, 0, 1]))
-        R[1, :] = np.cross(R[2, :], R[0, :])
-
-        # Compute translation vector
-        t = world
-
-        # Compute transformation matrix
-        T = np.identity(4)
-        T[:3, :3] = R
-        T[:3, 3] = t
-
-        return T
-
 class DataLoader:
     def __init__(self):
         pass
@@ -90,271 +38,75 @@ class DataLoader:
 
         return target_mask
 
+class PredictionProcessor:
+    def __init__(self, extrinsics, intrinsics, lowerBound=(40, 30, 30), upperBound=(80, 255, 255)):
+        self.extrinsic = extrinsics
+        self.intrinsic = intrinsics
 
-def get_surface_normal_by_depth(depth, K=None, method='gradient'):
-    """
-    depth: (h, w) of float, the unit of depth is meter
-    K: (3, 3) of float, the depth camere's intrinsic
-    """
-    K = [[1, 0], [0, 1]] if K is None else K
-    fx, fy = K[0][0], K[1][1]
-
-    depth[depth == 0] = 1e-7
-    normal_unit = np.zeros((depth.shape[0], depth.shape[1], 3))
-
-    if method == 'gradient':
-        # dz_dv, dz_du = np.gradient(depth)  # u, v mean the pixel coordinate in the image
-        dz_dv = cv2.Sobel(depth, cv2.CV_32F, 1, 0, ksize=7)     
-        dz_du = cv2.Sobel(depth, cv2.CV_32F, 0, 1, ksize=7)
-        # u*depth = fx*x + cx --> du/dx = fx / depth
-        du_dx = fx / depth  # x is xyz of camera coordinate
-        dv_dy = fy / depth
-
-        dz_dx = dz_du * du_dx
-        dz_dy = dz_dv * dv_dy
-        # cross-product (1,0,dz_dx)X(0,1,dz_dy) = (-dz_dx, -dz_dy, 1)
-        normal_cross = np.dstack((-dz_dx, -dz_dy, np.ones_like(depth)))
-        # normalize to unit vector
-        normal_unit = normal_cross / np.linalg.norm(normal_cross, axis=2, keepdims=True)
-        # set default normal to [0, 0, 1]
-        normal_unit[~np.isfinite(normal_unit).all(2)] = [0, 0, 1]
-    elif method == 'conv':
-        # Create conv kernels
-        kernel_x = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]])
-        kernel_y = np.array([[1, 2, 1], [0, 0, 0], [-1, -2, -1]])
-
-        kernel_x_flip = np.flip(kernel_x, axis=0)
-        kernel_y_flip = np.flip(kernel_y, axis=1)
-
-        # Apply conv kernels
-        dz_dx = cv2.filter2D(depth, -1, kernel_x_flip, borderType=cv2.BORDER_CONSTANT)
-        dz_dy = cv2.filter2D(depth, -1, kernel_y_flip, borderType=cv2.BORDER_CONSTANT)
-
-        # Compute normal
-        normal_cross = np.dstack((-dz_dx, -dz_dy, np.ones_like(depth)))
-        normal_unit = normal_cross / np.linalg.norm(normal_cross, axis=2, keepdims=True)
-        normal_unit[~np.isfinite(normal_unit).all(2)] = [0, 0, 1]
+        # Lower and upper bounds for HSV color range
+        self.lowerBound = lowerBound
+        self.upperBound = upperBound
 
 
-    return normal_unit
+    # Returns a sorted list of centroids for the largest connected components in the prediction (largest to smallest)
+    def computeCentroids(self, image):
+        # Preprocess image
+        hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
-def get_average_normal(normals, center, radius, image=None, draw=False):
-    n_avg = np.zeros(3)
-    count = 0
-    for i in range(center[0]-radius, center[0]+radius):
-        for j in range(center[1]-radius, center[1]+radius):
-            n = normals[i, j]
-            start = np.array((i, j))
-            end = np.array((int(i + n[0]*50), int(j + n[1]*50)))
+        # Filter green pixels in hsv image
+        mask = cv2.inRange(hsv, self.lowerBound, self.upperBound)
 
-            if draw:
-                cv2.arrowedLine(image, start, end, (0, 255, 0), 1)
+        # Find connected components in mask
+        n_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(mask)
 
-            n_avg += n
-            count += 1
+        # Sort centroids by area (descending) using stats[:, cv2.CC_STAT_AREA]
+        centroids_sorted = centroids[stats[:, cv2.CC_STAT_AREA].argsort()[::-1]]
 
-    n_avg /= count
-    return n_avg
+        return centroids_sorted
 
-def circular_gaussian_mask(radius, sigma):
-    x = np.arange(-radius, radius+1)
-    y = np.arange(-radius, radius+1)
-    xx, yy = np.meshgrid(x, y)
-    mask = np.exp(-0.5*(xx**2 + yy**2) / sigma**2)
-    return mask
+    def pixel2point(self, point2d, depth, depth_scale=1000):
+        # Convert pixel coordinate to 3D point
+        z = depth[point2d[1], point2d[0]]/depth_scale
+        x = (point2d[0] - self.intrinsic[0,2]) * z / self.intrinsic[0,0]
+        y = (point2d[1] - self.intrinsic[1,2]) * z / self.intrinsic[1,1]
+        point_3d = np.array([ [x, y, z] ], dtype=np.float64)
 
-def get_weighted_average_normal(normals, center, radius, sigma=0.1, image=None, draw=False, weight_func=None):
-    n_avg = np.zeros(3)
-    weights_sum = 0
-    scale = 50
-
-    # create circular mask with specified radius and sigma
-    circular_mask = circular_gaussian_mask(radius, sigma)
-    circular_mask = cv2.resize(circular_mask, (normals.shape[1], normals.shape[0]))
-    print("center in func:", center)
-    # iterate over pixels in circular region
-    for i in range(center[0]-radius, center[0]+radius+1):
-        for j in range(center[1]-radius, center[1]+radius+1):
-            # check if pixel is within image bounds
-            if i < 0 or i >= normals.shape[0] or j < 0 or j >= normals.shape[1]:
-                continue
-
-            # calculate weight for pixel using weight_func
-            weight = weight_func(circular_mask[i,j]) if weight_func is not None else circular_mask[i,j]
-
-            # calculate weighted normal and accumulate
-            n = normals[i, j]
-            n_avg += n * weight
-            weights_sum += weight
-
-            # draw arrow on image if requested
-            if draw and image is not None:
-                start = np.array((i, j))
-                end = np.array((int(i + n[0]*scale), int(j + n[1]*scale)))
-                cv2.arrowedLine(image, tuple(start), tuple(end), (0, 255, 0), 1)
-
-    # normalize accumulated normal by sum of weights
-    if weights_sum != 0:
-        n_avg /= weights_sum
-
-    if draw:
-        start = np.array((center[0], center[1]))
-        end = np.array((int(center[0] + n_avg[0]*scale), int(center[1] + n_avg[1]*scale)))
-        cv2.arrowedLine(image, tuple(start), tuple(end), (255, 0, 0), 2)
-
-    return n_avg
-
-def get_weighted_average_normal_v2(normals, center, radius, sigma=0.1, image=None, draw=False, weight_func=None, angle_threshold=np.pi/2):
-    n_avg = np.zeros(3)
-    weights_sum = 0
-    scale = 50
-
-    # create circular mask with specified radius and sigma
-    circular_mask = circular_gaussian_mask(radius, sigma)
-    circular_mask = cv2.resize(circular_mask, (normals.shape[1], normals.shape[0]))
-
-    # compute average normal for circular region
-    for i in range(center[0]-radius, center[0]+radius+1):
-        for j in range(center[1]-radius, center[1]+radius+1):
-            # check if pixel is within image bounds
-            if i < 0 or i >= normals.shape[0] or j < 0 or j >= normals.shape[1]:
-                continue
-
-            # calculate weight for pixel using weight_func
-            weight = weight_func(circular_mask[i,j]) if weight_func is not None else circular_mask[i,j]
-
-            # accumulate normal and weight
-            n = normals[i, j]
-            n_avg += n * weight
-            weights_sum += weight
-
-            # draw arrow on image if requested
-            if draw and image is not None:
-                start = np.array((i, j))
-                end = np.array((int(i + n[0]*scale), int(j + n[1]*scale) ))
-                cv2.arrowedLine(image, tuple(start), tuple(end), (0, 255, 0), 1)
-
-    # normalize accumulated normal by sum of weights
-    if weights_sum != 0:
-        n_avg /= weights_sum
-
-    # filter out noisy normals by comparing to average normal
-    filtered_normals = []
-    for i in range(center[0]-radius, center[0]+radius+1):
-        for j in range(center[1]-radius, center[1]+radius+1):
-            # check if pixel is within image bounds
-            if i < 0 or i >= normals.shape[0] or j < 0 or j >= normals.shape[1]:
-                continue
-
-            # calculate angle between normal and average normal
-            n = normals[i, j]
-            angle = np.arccos(np.dot(n, n_avg) / (np.linalg.norm(n) * np.linalg.norm(n_avg)))
-
-            # only include normal if angle is within threshold
-            if angle < angle_threshold:
-                filtered_normals.append(n)
-
-    # compute new average normal for filtered normals
-    n_filtered_avg = np.mean(filtered_normals, axis=0)
-
-    if draw:
-        start = np.array( (center[0], center[1]) )
-        end = np.array(( int(center[0] + n_filtered_avg[0]*scale), int(center[1] + n_filtered_avg[1]*scale) ))
-        cv2.arrowedLine(image, tuple(start), tuple(end), (255, 0, 0), 2)
-
-    return n_filtered_avg
-
-def convert_depth_to_point_cloud(depth_map, K):
-    u, v = np.meshgrid(np.arange(depth_map.shape[1]), np.arange(depth_map.shape[0]))
-
-    # Convert K to be in meters instead of millimeters
-    K = K / 1000
-
-    # compute x, y, z coordinates of each pixel
-    x = (u - K[0,2]) * depth_map / K[0,0]
-    y = (v - K[1,2]) * depth_map / K[1,1]
-    z = depth_map
-
-    # convert to point cloud
-    point_cloud = np.zeros((depth_map.shape[0], depth_map.shape[1], 3))
-    point_cloud[:,:,0] = x
-    point_cloud[:,:,1] = y
-    point_cloud[:,:,2] = z
-
-    # print(f"point_cloud: {point_cloud.shape}")
-    # print(point_cloud[0,0,:])
-
-    return point_cloud
-
-def PCA(data, correlation = False, sort = True):
-    mean = np.mean(data, axis=0)
-
-    data_adjust = data - mean
-
-    #: the data is transposed due to np.cov/corrcoef syntax
-    if correlation:
-        matrix = np.corrcoef(data_adjust.T)
-        
-    else:
-        matrix = np.cov(data_adjust.T) 
-
-    eigenvalues, eigenvectors = np.linalg.eig(matrix)
-
-    if sort:
-        #: sort eigenvalues and eigenvectors
-        sort = eigenvalues.argsort()[::-1]
-        eigenvalues = eigenvalues[sort]
-        eigenvectors = eigenvectors[:,sort]
-
-    return eigenvalues, eigenvectors
-
-def PCA_RANSAC(data, n_iterations=100, sample_size=3, inlier_threshold=0.1, correlation=False, sort=True):
-    best_normal = None
-    best_inliers = None
-
-    for i in range(n_iterations):
-        # Randomly sample a subset of the data
-        sample_indices = np.random.choice(data.shape[0], sample_size, replace=False)
-        sample = data[sample_indices]
-
-        # Fit a plane using PCA
-        eigenvalues, eigenvectors = PCA(sample, correlation=correlation, sort=sort)
-        normal = eigenvectors[:,2]
-
-        # Compute the distance from each point to the plane
-        distances = np.abs(data.dot(normal) - data.dot(normal).mean())
-
-        # Count the number of inliers within the threshold
-        inliers = distances < inlier_threshold
-        n_inliers = np.count_nonzero(inliers)
-
-        # Update the best model if the current model has more inliers
-        if best_inliers is None or n_inliers > best_inliers:
-            best_inliers = n_inliers
-            best_normal = normal
-
-    return best_normal
-
-
-def get_surface_normals(point_cloud, center, image=None, draw=False):
-    # Extract point cloud around center
-    radius = 5
-    point_cloud_sample = point_cloud[center[0]-radius:center[0]+radius+1, center[1]-radius:center[1]+radius+1, :]
-    print(f"point_cloud_sample: {point_cloud_sample.shape}")
-
-    # Use RANSAC to compute surface normal
-    normal = PCA_RANSAC(point_cloud_sample.reshape(-1,3), correlation=True, sort=True)
-
-    # Draw surface normal
-    if draw:
-        scale = 100
-        start = center
-        end = np.array(( int(center[0] + normal[0]*scale), int(center[1] + normal[1]*scale) ))
-        cv2.arrowedLine(image, tuple(start), tuple(end), (255, 0, 0), 2)
-
-    return normal
-
+        return point_3d
     
+    def computeCloudDistances(self, pc, center_3d):
+        # Create point cloud from 3d point
+        pc_center_3d = o3d.geometry.PointCloud()
+        pc_center_3d.points = o3d.utility.Vector3dVector(center_3d)
+        pc_center_3d.transform([[1, 0, 0, 0],
+                                [0, -1, 0, 0],
+                                [0, 0, -1, 0],
+                                [0, 0, 0, 1]])
+
+        # Compute distances between points in pc and pc_center_3d & find index of closest point
+        distances = pc.compute_point_cloud_distance(pc_center_3d)
+        return distances
+    
+    def computeRotationMatrixFromNormal(self, normal):
+        # Compute rotation matrix from normal
+        # Find 2 vectors orthogonal to normal
+        if normal[0] != 0 or normal[1] != 0:
+            u = np.array([1, 0, 0])
+        else:
+            u = np.array([0, 1, 0])
+        v = np.cross(normal, u)
+        u = np.cross(v, normal)
+
+        # Normalize vectors
+        u = u / np.linalg.norm(u)
+        v = v / np.linalg.norm(v)
+        normal = normal / np.linalg.norm(normal)
+
+        # Create rotation matrix
+        R = np.vstack((u, v, normal)).T
+        return R
+
+ 
+
 
 def main():
     # Load image, GT mask, depth map, camera extrinsics and intrinsics
@@ -382,32 +134,11 @@ def main():
     # Draw circles at center of the largest connected component
     # Convert array of centers to int
     centers = centers.astype(int)
-    center = centers[2]
-    center = np.array((203,338))
+    center = centers[1]
+    # center = np.array((203,338))
     cv2.circle(image, center, 5, (0, 0, 255), -1)
 
 
-
-    #---------------- VIRKER IKKE LORT------------------------------------------------------
-
-    # depth = (depth*1e-4).astype(np.float32)
-    # # Remove noise from depth map
-    # depth = cv2.medianBlur(depth, 5)
-    # depth = cv2.GaussianBlur(depth, (5, 5), 3)
-
-    # # Normalize depth map
-    # # depth_map_normalized = ((depth - np.min(depth)) / np.ptp(depth)).astype(np.float32)
-
-    # # Calculate surface normals
-    # normals = get_surface_normal_by_depth(depth, intrinsics, method="gradient")
-    # # point_cloud = convert_depth_to_point_cloud(depth, intrinsics)
-    # # tests = get_surface_normals(point_cloud, center, image=image, draw=True)
-
-    # # Calculate an average normal vector for the largest object's center
-    # radius = 3
-    # sigma = 2
-    # n_avg = get_weighted_average_normal_v2(normals, center, radius, sigma, image=image, draw=True)#, weight_func=weight_func)
-    # print("average normal: ", n_avg)
 
     #----------------------------------------------------------------------
     #-------------------------- OPEN3D ------------------------------------
@@ -417,82 +148,78 @@ def main():
 
     # Convert intrinsics to o3d camera intrinsic and create o3d camera
     camera_intrinsics = o3d.camera.PinholeCameraIntrinsic(intrinsics.shape[1], intrinsics.shape[0], intrinsics[0,0], intrinsics[1,1], intrinsics[0,2], intrinsics[1,2])
-    camera_extrinsics = np.eye(4)
-
-    pc = o3d.geometry.PointCloud.create_from_depth_image(depth_image, camera_intrinsics, camera_extrinsics, depth_scale=1000)#, depth_trunc=1000, stride=1)
-
-    # # Remove outliers
-    # pc.voxel_down_sample(voxel_size=10)
-    # pc.remove_statistical_outlier(nb_neighbors=20, std_ratio=1.0)
-
+    camera_extrinsics = np.eye(4) # TODO: Kig eventuelt på dette og brug kamera extrinsics hvis nødvendigt?
     
+    # Create point cloud from depth map
+    depth_scale = 1000
+    pc = o3d.geometry.PointCloud.create_from_depth_image(depth_image, camera_intrinsics, camera_extrinsics, depth_scale=depth_scale)
+
+    # Remove outliers
+    pc.voxel_down_sample(voxel_size=0.0005)
+    pc.remove_statistical_outlier(nb_neighbors=20, std_ratio=1.0)
+
     # Flip point cloud
     pc.transform([[1, 0, 0, 0],
-                    [0, -1, 0, 0],
-                    [0, 0, -1, 0],
-                    [0, 0, 0, 1]])
+                  [0, -1, 0, 0],
+                  [0, 0, -1, 0],
+                  [0, 0, 0, 1]])
     
     # Compute surface normals
-    # pc.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
-    pc.estimate_normals()
+    pc.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.05, max_nn=30))
+    pc.normalize_normals()
 
-    # print("pc points:", np.asarray(pc.points)[21321])
+    # Pixel coordinate to 3D point
+    center_3d = predictionProcessor.pixel2point(point2d=center, depth=depth, depth_scale=depth_scale)
 
-    z = depth[center[0], center[1]]/1000
-    x = (center[0] - intrinsics[0,2]) * z / intrinsics[0,0]
-    y = (center[1] - intrinsics[1,2]) * z / intrinsics[1,1]
-    center_3d = np.array([ [x, y, z] ], dtype=np.float64)
-    print("center: ", center_3d)
+    # Compute distances between points in pc and pc_center_3d & find index of closest point
+    distances = predictionProcessor.computeCloudDistances(pc, center_3d)
 
-    pc_center_3d = o3d.geometry.PointCloud()
-    pc_center_3d.points = o3d.utility.Vector3dVector(center_3d)
-    pc_center_3d.transform([[1, 0, 0, 0],
-                            [0, -1, 0, 0],
-                            [0, 0, -1, 0],
-                            [0, 0, 0, 1]])
-    distances = pc.compute_point_cloud_distance(pc_center_3d)
-    # Find index of point closest to center_3d
+    # Get index of closest point
     index = np.argmin(distances)
-    print("index: ", index)
 
-
-
-    # positions = np.asarray(pc.points[index])
-    positions = np.asarray(center_3d[0])
-
-    print("positions: ", type(positions), positions.shape)
-    # positions = np.asarray(center_3d)
+    # Get normal vector and 3d point at closest point
+    pos_3d = np.asarray(pc.points[index])
     normal = np.asarray(pc.normals[index])
-    print("positions: ", positions)
 
-    # Create line set
+    # Check if normal z component is negative and flip normal if so
+    if normal[2] < 0:
+        normal = -normal
+
+    normalized_normal = normal / np.linalg.norm(normal)
+    print(f"Normal and normalized normal at {center} is: \n {normal} \n {normalized_normal}")
+
+    # Create normal vector line
     scale = 1
-    line_points = [positions, positions + normal*scale]
+    line_points = [pos_3d, pos_3d + normal*scale]
     line_colors = [[1, 0, 0], [1, 0, 0]]
-    # print("normal: ", normal)
-    # print("positions: ", positions)
-    # print("line_points: ", line_points)
-    # print("line_colors: ", line_colors)
 
+    # Create line set to visualize normal vector
     line_set = o3d.geometry.LineSet()
     line_set.points = o3d.utility.Vector3dVector(line_points)
     line_set.lines = o3d.utility.Vector2iVector([[0, 1]])
     line_set.colors = o3d.utility.Vector3dVector(line_colors)
 
+    # Compute rotation matrix from normal
+    R = predictionProcessor.computeRotationMatrixFromNormal(normal)
+    # print("Rotation matrix:\n", R)
 
-
-
+    # Tests to confirm that R is a valid rotation matrix
+    # print("R dot n:", R.dot(normal)) # Should be equal to normal
+    # print("R^T R:\n", np.matmul(R.T, R), "\n RR^T\n", np.matmul(R, R.T)) # Should be identity matrix
+    # print("det(R):", np.linalg.det(R))   # Should be 1
+    # v = np.array([1, 0, 0])
+    # v_rotated = R.dot(v)
+    # print("v_rotated:", v_rotated)
+    # dot_product = np.dot(v_rotated, normal)
+    # print("dot_product:", dot_product)
 
     #---------------------- VISUALIZE -------------------------------------
-
     # Display images
     cv2.imshow("image", image)
-    # cv2.imshow("prediction", prediction)
-    # cv2.imshow("depth", depth)
+    cv2.imshow("prediction", prediction)
+    cv2.imshow("depth", depth)
     # cv2.imshow("normal", normals)
 
-
-    # o3d.visualization.draw_geometries([pc])
     o3d.visualization.draw_geometries([pc, line_set])
     cv2.waitKey(0)
 
