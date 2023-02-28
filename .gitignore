@@ -1,9 +1,11 @@
 # Other cutsom things 
-*.vscode/*
-*.png
+*.vscode/
 *.pth
-*images/*
-*depth/*
+*images/
+*image/
+*depth/
+*labels/
+*label/
 
 # Ignore dataset
 _data*
