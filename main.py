@@ -1,6 +1,7 @@
 import cv2
 import os
 import numpy as np
+import open3d as o3d
 
 class PredictionProcessor:
     def __init__(self, extrinsics, intrinsics, lowerBound=(40, 30, 30), upperBound=(80, 255, 255)):
@@ -54,8 +55,6 @@ class PredictionProcessor:
 
         return T
 
-
-
 class DataLoader:
     def __init__(self):
         pass
@@ -90,7 +89,6 @@ class DataLoader:
         target_mask[np.where((mask == [255, 255, 255]).all(axis=2))] = [255, 0, 0]
 
         return target_mask
-
 
 
 def get_surface_normal_by_depth(depth, K=None, method='gradient'):
@@ -266,27 +264,6 @@ def get_weighted_average_normal_v2(normals, center, radius, sigma=0.1, image=Non
 
     return n_filtered_avg
 
-# def get_surface_normal(depth_map, center, K, image=None, draw=False):
-
-#     u, v = np.meshgrid(np.arange(depth_map.shape[1]), np.arange(depth_map.shape[0]))
-
-#     # compute x, y, z coordinates of each pixel
-#     x = (u - K[0,2]) * depth_map / K[0,0]
-#     y = (v - K[1,2]) * depth_map / K[1,1]
-#     z = depth_map
-
-#     # compute surface normal for each pixel
-#     normals = np.zeros((depth_map.shape[0], depth_map.shape[1], 3))
-#     normals[:,:,0] = (x - np.roll(x, 1, axis=1))
-#     normals[:,:,1] = (y - np.roll(y, 1, axis=0))
-#     normals[:,:,2] = (z - np.roll(z, 1, axis=0)) + (z - np.roll(z, 1, axis=1))
-
-#     # normalize surface normals
-#     normals = normals / np.linalg.norm(normals, axis=2, keepdims=True)
-
-
-#     return normals
-
 def convert_depth_to_point_cloud(depth_map, K):
     u, v = np.meshgrid(np.arange(depth_map.shape[1]), np.arange(depth_map.shape[0]))
 
@@ -358,29 +335,6 @@ def PCA_RANSAC(data, n_iterations=100, sample_size=3, inlier_threshold=0.1, corr
 
     return best_normal
 
-# def get_surface_normals(point_cloud, center, image=None, draw=False):
-#     # Use PCA to compute surface normal
-#     # https://math.stackexchange.com/questions/99299/best-fitting-plane-given-a-set-of-points
-
-#     # Extract point cloud around center
-#     radius = 5
-#     point_cloud_sample = point_cloud[center[0]-radius:center[0]+radius+1, center[1]-radius:center[1]+radius+1, :]
-#     print(f"point_cloud_sample: {point_cloud_sample.shape}")
-
-#     # Use PCA to compute surface normal
-#     eigenvalues, eigenvectors = PCA(point_cloud_sample.reshape(-1,3), correlation=False, sort=True)
-#     normal = eigenvectors[:,2]
-#     print(f"normal: {normal.shape}\n {normal}")
-
-#     # Draw surface normal
-#     if draw:
-#         scale = 100000
-#         start = center
-#         end = np.array(( int(center[0] + normal[0]*scale), int(center[1] + normal[1]*scale) ))
-#         cv2.arrowedLine(image, tuple(start), tuple(end), (255, 0, 0), 2)
-
-
-#     return normal
 
 def get_surface_normals(point_cloud, center, image=None, draw=False):
     # Extract point cloud around center
@@ -411,10 +365,10 @@ def main():
     depth = loader.load_image(f"data/depth-input/{idName}.png", cv2.IMREAD_UNCHANGED)
     # Create artificial prediction from GT data
     prediction = loader.create_mask(mask) # Denne skal erstattes med prediction og er i BGR format
+    
     # Load camera extrinsics and intrinsics
-    printData = False
-    extrinsics = loader.load_txt(f"data/camera-pose/{idName}.txt", 4, 4, printData)
-    intrinsics = loader.load_txt(f"data/camera-intrinsics/{idName}.txt", 3, 3, printData)
+    extrinsics = loader.load_txt(f"data/camera-pose/{idName}.txt", 4, 4, printData=False)
+    intrinsics = loader.load_txt(f"data/camera-intrinsics/{idName}.txt", 3, 3, printData=False)
 
     # Create prediction processor and define custom lower and upper bounds for HSV color range
     # These values are used to filter out green pixels in the prediction
@@ -428,45 +382,119 @@ def main():
     # Draw circles at center of the largest connected component
     # Convert array of centers to int
     centers = centers.astype(int)
-    center = centers[1]
-    # center = np.array((203,338))
+    center = centers[2]
+    center = np.array((203,338))
     cv2.circle(image, center, 5, (0, 0, 255), -1)
 
 
 
+    #---------------- VIRKER IKKE LORT------------------------------------------------------
+
+    # depth = (depth*1e-4).astype(np.float32)
+    # # Remove noise from depth map
+    # depth = cv2.medianBlur(depth, 5)
+    # depth = cv2.GaussianBlur(depth, (5, 5), 3)
+
+    # # Normalize depth map
+    # # depth_map_normalized = ((depth - np.min(depth)) / np.ptp(depth)).astype(np.float32)
+
+    # # Calculate surface normals
+    # normals = get_surface_normal_by_depth(depth, intrinsics, method="gradient")
+    # # point_cloud = convert_depth_to_point_cloud(depth, intrinsics)
+    # # tests = get_surface_normals(point_cloud, center, image=image, draw=True)
+
+    # # Calculate an average normal vector for the largest object's center
+    # radius = 3
+    # sigma = 2
+    # n_avg = get_weighted_average_normal_v2(normals, center, radius, sigma, image=image, draw=True)#, weight_func=weight_func)
+    # print("average normal: ", n_avg)
+
     #----------------------------------------------------------------------
-
-    depth = (depth*1e-4).astype(np.float32)
-    # Remove noise from depth map
-    depth = cv2.medianBlur(depth, 3)
-    depth = cv2.GaussianBlur(depth, (3, 3), 3)
-
-    # Normalize depth map
-    # depth_map_normalized = ((depth - np.min(depth)) / np.ptp(depth)).astype(np.float32)
-
-    # Calculate surface normals
-    normals = get_surface_normal_by_depth(depth, intrinsics, method="gradient")
-    # point_cloud = convert_depth_to_point_cloud(depth, intrinsics)
-    # tests = get_surface_normals(point_cloud, center, image=image, draw=True)
-
-    # Calculate an average normal vector for the largest object's center
-    radius = 3
-    sigma = 2
-    n_avg = get_weighted_average_normal_v2(normals, center, radius, sigma, image=image, draw=True)#, weight_func=weight_func)
-    print("average normal: ", n_avg)
-
+    #-------------------------- OPEN3D ------------------------------------
     #----------------------------------------------------------------------
+    # Convert depth map to o3d image
+    depth_image = o3d.geometry.Image(depth)
 
+    # Convert intrinsics to o3d camera intrinsic and create o3d camera
+    camera_intrinsics = o3d.camera.PinholeCameraIntrinsic(intrinsics.shape[1], intrinsics.shape[0], intrinsics[0,0], intrinsics[1,1], intrinsics[0,2], intrinsics[1,2])
+    camera_extrinsics = np.eye(4)
+
+    pc = o3d.geometry.PointCloud.create_from_depth_image(depth_image, camera_intrinsics, camera_extrinsics, depth_scale=1000)#, depth_trunc=1000, stride=1)
+
+    # # Remove outliers
+    # pc.voxel_down_sample(voxel_size=10)
+    # pc.remove_statistical_outlier(nb_neighbors=20, std_ratio=1.0)
+
+    
+    # Flip point cloud
+    pc.transform([[1, 0, 0, 0],
+                    [0, -1, 0, 0],
+                    [0, 0, -1, 0],
+                    [0, 0, 0, 1]])
+    
+    # Compute surface normals
+    # pc.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
+    pc.estimate_normals()
+
+    # print("pc points:", np.asarray(pc.points)[21321])
+
+    z = depth[center[0], center[1]]/1000
+    x = (center[0] - intrinsics[0,2]) * z / intrinsics[0,0]
+    y = (center[1] - intrinsics[1,2]) * z / intrinsics[1,1]
+    center_3d = np.array([ [x, y, z] ], dtype=np.float64)
+    print("center: ", center_3d)
+
+    pc_center_3d = o3d.geometry.PointCloud()
+    pc_center_3d.points = o3d.utility.Vector3dVector(center_3d)
+    pc_center_3d.transform([[1, 0, 0, 0],
+                            [0, -1, 0, 0],
+                            [0, 0, -1, 0],
+                            [0, 0, 0, 1]])
+    distances = pc.compute_point_cloud_distance(pc_center_3d)
+    # Find index of point closest to center_3d
+    index = np.argmin(distances)
+    print("index: ", index)
+
+
+
+    # positions = np.asarray(pc.points[index])
+    positions = np.asarray(center_3d[0])
+
+    print("positions: ", type(positions), positions.shape)
+    # positions = np.asarray(center_3d)
+    normal = np.asarray(pc.normals[index])
+    print("positions: ", positions)
+
+    # Create line set
+    scale = 1
+    line_points = [positions, positions + normal*scale]
+    line_colors = [[1, 0, 0], [1, 0, 0]]
+    # print("normal: ", normal)
+    # print("positions: ", positions)
+    # print("line_points: ", line_points)
+    # print("line_colors: ", line_colors)
+
+    line_set = o3d.geometry.LineSet()
+    line_set.points = o3d.utility.Vector3dVector(line_points)
+    line_set.lines = o3d.utility.Vector2iVector([[0, 1]])
+    line_set.colors = o3d.utility.Vector3dVector(line_colors)
+
+
+
+
+
+    #---------------------- VISUALIZE -------------------------------------
 
     # Display images
     cv2.imshow("image", image)
-    cv2.imshow("prediction", prediction)
-    cv2.imshow("depth", depth)
-    cv2.imshow("normal", normals)
+    # cv2.imshow("prediction", prediction)
+    # cv2.imshow("depth", depth)
+    # cv2.imshow("normal", normals)
 
+
+    # o3d.visualization.draw_geometries([pc])
+    o3d.visualization.draw_geometries([pc, line_set])
     cv2.waitKey(0)
-
-
 
 
 
