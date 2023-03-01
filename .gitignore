@@ -168,6 +168,8 @@ cython_debug/
 data
 data/
 *.pickle
+data_synthetic
+data_synthetic/
 
 
 data_kk
