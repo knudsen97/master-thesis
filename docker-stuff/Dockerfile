@@ -14,6 +14,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Copy the data folder to the docker container
 COPY data/ data/
+COPY data_synthetic/ data_synthetic/
 
 # Run update
 RUN apt-get update

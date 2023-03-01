@@ -15,15 +15,15 @@ import argparse
 
 # Create custom dataset class
 class SegNetDataset(Dataset):
-    def __init__(self, root_dir, transform=None, transform_augmentations=None):
-        self.root_dir = root_dir
+    def __init__(self, data_dir, synthetic, transform=None, transform_augmentations=None):
+        self.synthetic = synthetic
+        self.data_dir = data_dir
+
         self.transform = transform
         self.transform_augmentations = transform_augmentations
 
-        # self.toTensor = tf.Compose([tf.ToTensor()])
-        self.images = os.listdir(os.path.join(root_dir, 'color-input'))
-        # self.depths = os.listdir(os.path.join(root_dir, 'depth-input'))
-        self.masks  = os.listdir(os.path.join(root_dir, 'label'))
+        self.images = os.listdir(os.path.join(data_dir, 'color-input'))
+        self.masks  = os.listdir(os.path.join(data_dir, 'label'))
         
     def __len__(self):
         return len(self.images)
@@ -40,9 +40,9 @@ class SegNetDataset(Dataset):
         return target_mask
 
     def __getitem__(self, idx):
-        img_path    = os.path.join(self.root_dir, 'color-input', self.images[idx])
-        mask_path   = os.path.join(self.root_dir, 'label', self.masks[idx])
-        
+        img_path    = os.path.join(self.data_dir, 'color-input', self.images[idx])
+        mask_path   = os.path.join(self.data_dir, 'label', self.masks[idx])
+
         # Read image and mask
         image = cv2.imread(img_path)
         mask  = cv2.imread(mask_path)
@@ -50,25 +50,25 @@ class SegNetDataset(Dataset):
         # Convert to RGB
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         mask  = cv2.cvtColor(mask,  cv2.COLOR_BGR2RGB)
-        target_mask = self.create_mask(mask)
+        if self.synthetic:
+            target_mask = mask
+        else:
+            target_mask = self.create_mask(mask)
 
-
-
+        # Apply transformations
         if self.transform:
             image = self.transform(image)
             mask = self.transform(mask)
-            target_mask = self.transform(target_mask)        
-        
+            target_mask = self.transform(target_mask)
         if self.transform_augmentations:
             image = self.transform_augmentations(image)
 
-        # print(f"image/mask/target sizes: {image.shape} / {mask.shape} / {target_mask.shape}")
         # Permute the image dimensions to (H, W, C)
         image = image.permute(1, 2, 0)
         mask = mask.permute(1, 2, 0)
         target_mask = target_mask.permute(1, 2, 0)
 
-        return image, target_mask, mask    #, depth
+        return image, target_mask, mask
 
 # Define function to calculate accuracy
 def accuracy(outputs, targets):
@@ -188,13 +188,22 @@ def main():
     ])
 
 
-    dataset = SegNetDataset(root_dir='data', transform=transforms, transform_augmentations=transform_augmentations)
+    # Create dataset
+    data_dir = 'data'
+    data_syn_dir = 'data_synthetic'
+    dataset_real = SegNetDataset(data_dir=data_dir, synthetic=False, transform=transforms, transform_augmentations=transform_augmentations)
+    dataset_syn = SegNetDataset(data_dir=data_syn_dir, synthetic=True, transform=transforms, transform_augmentations=transform_augmentations)
 
     # Split dataset into train and test
-    train_data, test_data = data.random_split(dataset, [int(len(dataset)*0.8), len(dataset)-int(len(dataset)*0.8)])
+    real_train_data, real_test_data = data.random_split(dataset_real, [int(len(dataset_real)*0.8), len(dataset_real)-int(len(dataset_real)*0.8)])
+    synthetic_train_data, synthetic_test_data = data.random_split(dataset_syn, [int(len(dataset_syn)*0.8), len(dataset_syn)-int(len(dataset_syn)*0.8)])
 
-    batch_size = args.batch_size
+    # Concatenate the datasets
+    train_data = data.ConcatDataset([real_train_data, synthetic_train_data])
+    test_data  = data.ConcatDataset([real_test_data, synthetic_test_data])
+
     # Create dataloaders
+    batch_size = args.batch_size
     train_loader = data.DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=4)
     test_loader  = data.DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=4)
 
