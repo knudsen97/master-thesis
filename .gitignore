@@ -13,6 +13,8 @@ _data*/
 
 # Ignore hidden folders
 _*
+.vscode/*
+*/.vscode/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -176,3 +178,10 @@ cython_debug/
 #.idea/
 
 
+# Ignore dataset
+data
+data/
+*.pickle
+data_synthetic
+data_synthetic/
+*.tar
