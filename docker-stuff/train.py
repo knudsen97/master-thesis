@@ -22,8 +22,8 @@ class SegNetDataset(Dataset):
         self.transform = transform
         self.transform_augmentations = transform_augmentations
 
-        self.images = os.listdir(os.path.join(data_dir, 'color-input'))
-        self.masks  = os.listdir(os.path.join(data_dir, 'label'))
+        self.images = sorted(os.listdir(os.path.join(data_dir, 'color-input')))
+        self.masks  = sorted(os.listdir(os.path.join(data_dir, 'label')))
         
     def __len__(self):
         return len(self.images)
