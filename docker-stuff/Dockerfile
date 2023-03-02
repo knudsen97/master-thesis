@@ -32,12 +32,12 @@ RUN apt-get install -y python3-pip
 # RUN python3 -mpip install segmentation_models_pytorch.Unet --cache-dir pip-cache
 
 # Copy python requirements and install them
-COPY requirements.txt .
+COPY docker-stuff/requirements.txt .
 RUN python3 -mpip install -r requirements.txt
 RUN python3 -mpip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cu117
 
 # Copy the python files
-COPY train.py .
+COPY docker-stuff/train.py .
 
 RUN mkdir results
 
