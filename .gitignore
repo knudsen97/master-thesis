@@ -10,6 +10,7 @@
 # Ignore dataset
 _data*
 _data*/
+*data*/
 
 # Ignore hidden folders
 _*
