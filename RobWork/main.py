@@ -91,6 +91,7 @@ def main():
     image_data_size = image.getDataSize() #480*640 * (bits_per_channel // 8) *3 #     bits_per_channel = image.getBitsPerPixel()
     print("image_data_size: ", image_data_size)
     print("colorcode: ", ColorEncoding(image.getColorEncoding()).name)
+    print("# of channels: ", image.getNrOfChannels())
     sbyte_data = ctypes.string_at(image_data, image_data_size)
     # print("sbyte_data: ", sbyte_data[:10])
     # print("sbyte_data type: ", sbyte_data[:10])
@@ -104,7 +105,19 @@ def main():
     img = nparr.reshape((image.getHeight(), image.getWidth(), 3))
     # cv.imwrite("RobWork/Project_WorkCell/temp2.jpg", img)
 
-    cv.imshow("Image", img)
+    imageData = ctypes.cast(image_data, ctypes.POINTER(ctypes.c_ubyte * image_data_size)).contents
+    print("imageData: ", imageData[:10])
+    print("imageData type: ", type(imageData))
+    imageBytes = bytes(imageData)
+    print("imageBytes: ", imageBytes[:10])
+    print("imageBytes type: ", type(imageBytes))
+
+    nparr2 = np.frombuffer(imageBytes, np.uint8)
+    img2 = nparr2.reshape((image.getHeight(), image.getWidth(), 3))
+
+    cv.imwrite("RobWork/Project_WorkCell/temp2.png", img2)
+
+    cv.imshow("Image", img2)
     cv.waitKey(0)
 
     # sbyte_data = image_data#.decode()
