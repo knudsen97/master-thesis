@@ -13,13 +13,22 @@
 	<Include file="UR5/UR-6-85-5-A/Device.wc.xml" />
 
 <!--insert gripper definition-->
-	<Frame name="Tool" refframe="UR-6-85-5-A.TCP">
+	<!-- <Frame name="Tool" refframe="UR-6-85-5-A.TCP">
 		<RPY>0 0 0</RPY> <Pos>0 0 0.072</Pos>
 	</Frame>
 	<Include file="wsg50/wsg50.xml" />
 
 	<Frame name="GraspTCP" refframe="UR-6-85-5-A.TCP" type="Fixed">
 		<RPY>0 0 0</RPY> <Pos>0 0 0.15</Pos>
+	</Frame> -->
+	
+
+
+	<Frame name="Tool" refframe="UR-6-85-5-A.TCP">
+		<RPY>90 0 0</RPY> <Pos> 0.0 0 0.0 </Pos>
+		<Drawable name="ToolUnit" refframe="UR-6-85-5-A.TCP">
+			<Polytope file="suctionGripper/ToolUnit" />
+		</Drawable>
 	</Frame>
 	
 <!-- Cameras -->
