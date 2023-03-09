@@ -114,16 +114,16 @@ def main():
     idName = "000028-0"
     image = loader.load_image(f"data/color-input/{idName}.png")
     mask = loader.load_image(f"data/label/{idName}.png")
-    # depth = loader.load_image(f"data/depth-input/{idName}.png", cv2.IMREAD_UNCHANGED)
-    depth_syn = loader.load_image(f"data_synthetic/depth-input/depth0.png", cv2.IMREAD_UNCHANGED)
+    depth = loader.load_image(f"data/depth-input/{idName}.png", cv2.IMREAD_UNCHANGED)
+    # depth_syn = loader.load_image(f"data_synthetic/depth-input/depth0.png", cv2.IMREAD_UNCHANGED)
 
     # Convert depth_syn to 1 channel
-    depth = cv2.cvtColor(depth_syn, cv2.COLOR_BGR2GRAY)
+    # depth = cv2.cvtColor(depth_syn, cv2.COLOR_BGR2GRAY)
     # print(depth[0])
     # print(depth_syn[0])
 
     # print(f"depth: {depth.shape} {depth.dtype} {depth.min()} {depth.max()} {type(depth)}")
-    print(f"depth_syn: {depth_syn.shape} {depth_syn.dtype} {depth_syn.min()} {depth_syn.max()} {type(depth_syn)}")
+    # print(f"depth_syn: {depth_syn.shape} {depth_syn.dtype} {depth_syn.min()} {depth_syn.max()} {type(depth_syn)}")
 
     # Create artificial prediction from GT data
     prediction = loader.create_mask(mask) # Denne skal erstattes med prediction og er i BGR format
