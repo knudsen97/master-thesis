@@ -1,5 +1,7 @@
 # Other cutsom things 
 *.vscode/
+.vscode/*
+*/.vscode/*
 *.pth
 *images/
 *image/
@@ -179,3 +181,10 @@ cython_debug/
 #.idea/
 
 
+# Ignore dataset
+data
+data/
+*.pickle
+data_synthetic
+data_synthetic/
+*.tar
