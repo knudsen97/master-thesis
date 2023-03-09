@@ -3,7 +3,7 @@
 	<Frame name="Table" refframe="WORLD" type="Fixed">
 		<RPY>0 0 0</RPY> <Pos>0 0 -0.1</Pos>		
 		<Drawable name="Table" refframe="Table">
-        <Polytope file="table/Sigmund_table" />
+        	<Polytope file="table/Sigmund_table" />
      	</Drawable>
 	</Frame>
 
@@ -21,14 +21,15 @@
 	<Frame name="GraspTCP" refframe="UR-6-85-5-A.TCP" type="Fixed">
 		<RPY>0 0 0</RPY> <Pos>0 0 0.15</Pos>
 	</Frame> -->
-	
-
 
 	<Frame name="Tool" refframe="UR-6-85-5-A.TCP">
 		<RPY>90 0 0</RPY> <Pos> 0.0 0 0.0 </Pos>
 		<Drawable name="ToolUnit" refframe="UR-6-85-5-A.TCP">
 			<Polytope file="suctionGripper/ToolUnit" />
 		</Drawable>
+	</Frame>
+	<Frame name="TCP" refframe="Tool">
+		<RPY>0 0 0</RPY> <Pos>0 0 0.072</Pos>
 	</Frame>
 	
 <!-- Cameras -->
@@ -63,10 +64,32 @@
 <Frame name="Container" refframe="Table" type="Fixed">
 	<RPY>0 0 0</RPY> <Pos>-0.2 0 0.12</Pos>		
 	<Drawable name="Container" refframe="Container">
-	<Polytope file="container/container" />
+		<RGB>0 0.2 0.5</RGB>
+		<Polytope file="container/container" />
 	</Drawable>
 </Frame>
 
+<!-- inserting objects -->
+
+<Frame name="Cube" refframe="Table"  type="Movable" daf="true" >
+	<RPY> 0 0 0 </RPY> <Pos> 0 0.474 0.17 </Pos>
+	<Drawable name="Cube1" refframe="Cube1">
+		<RGB>0.5 0 0</RGB>
+		<Polytope file="objects/puzzle/Part_1" />
+	</Drawable>
+	<Drawable name="Cube2" refframe="Cube2">
+		<RGB>1 1 0</RGB>
+		<Polytope file="objects/puzzle/Part_2" />
+	</Drawable>
+	<Drawable name="Cube3" refframe="Cube3">
+		<RGB>0 0 1</RGB>
+		<Polytope file="objects/puzzle/Part_3" />
+	</Drawable>
+	<Drawable name="Cube4" refframe="Cube4">
+		<RGB>0 1 0</RGB>
+		<Polytope file="objects/puzzle/Part_4" />
+	</Drawable>
+</Frame>
 
 <CollisionSetup file="SceneCollisionSetup.prox.xml" /> 
 
