@@ -9,7 +9,10 @@ find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/inc)
 
-# include python
+# include python 
+# guide to install python lib
+# https://www.linuxcapable.com/install-python-3-8-on-ubuntu-linux/?utm_content=cmp-true
+# the important part is `sudo apt install python3.8-dev`
 find_package(PythonLibs REQUIRED)
 include_directories(${PYTHON_INCLUDE_DIRS})
 
