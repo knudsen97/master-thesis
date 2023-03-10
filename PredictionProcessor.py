@@ -1,4 +1,4 @@
-import cv2
+import cv2 as cv
 import os
 import numpy as np
 import open3d as o3d
@@ -7,12 +7,12 @@ class DataLoader:
     def __init__(self):
         pass
 
-    def load_image(self, path, flag=cv2.IMREAD_COLOR):
+    def load_image(self, path, flag=cv.IMREAD_COLOR):
         # Check if image exists
         if not os.path.exists(path):
             raise FileNotFoundError("Image not found")
         
-        return cv2.imread(path, flag)
+        return cv.imread(path, flag)
 
     def load_txt(self, path, rows, cols, printData=False):
         # Check if file exists
@@ -51,16 +51,21 @@ class PredictionProcessor:
     # Returns a sorted list of centroids for the largest connected components in the prediction (largest to smallest)
     def computeCentroids(self, image):
         # Preprocess image
-        hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-
+        # hsv = cv.cvtColor(image, cv.COLOR_BGR2HSV)
         # Filter green pixels in hsv image
-        mask = cv2.inRange(hsv, self.lowerBound, self.upperBound)
+        # mask = cv.inRange(hsv, self.lowerBound, self.upperBound)
+        # cv.imshow("mask", mask)
+
+        # Take argmax of image and create mask. If pixel is not green, set to 0
+        mask = np.zeros(image.shape[:2], dtype=np.uint8)
+        GREEN = 1 # BLUE, GREEN, RED = 0, 1, 2
+        mask[np.argmax(image, axis=2) == GREEN] = 255
 
         # Find connected components in mask
-        n_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(mask)
+        n_labels, labels, stats, centroids = cv.connectedComponentsWithStats(mask)
 
         # Sort centroids by area (descending) using stats[:, cv2.CC_STAT_AREA]
-        centroids_sorted = centroids[stats[:, cv2.CC_STAT_AREA].argsort()[::-1]]
+        centroids_sorted = centroids[stats[:, cv.CC_STAT_AREA].argsort()[::-1]]
 
         return centroids_sorted
 
@@ -114,7 +119,7 @@ def main():
     idName = "000028-0"
     image = loader.load_image(f"data/color-input/{idName}.png")
     mask = loader.load_image(f"data/label/{idName}.png")
-    depth = loader.load_image(f"data/depth-input/{idName}.png", cv2.IMREAD_UNCHANGED)
+    depth = loader.load_image(f"data/depth-input/{idName}.png", cv.IMREAD_UNCHANGED)
     # depth_syn = loader.load_image(f"data_synthetic/depth-input/depth0.png", cv2.IMREAD_UNCHANGED)
 
     # Convert depth_syn to 1 channel
@@ -127,7 +132,8 @@ def main():
 
     # Create artificial prediction from GT data
     prediction = loader.create_mask(mask) # Denne skal erstattes med prediction og er i BGR format
-    
+
+
     # Load camera extrinsics and intrinsics
     extrinsics = loader.load_txt(f"data/camera-pose/{idName}.txt", 4, 4, printData=False)
     intrinsics = loader.load_txt(f"data/camera-intrinsics/{idName}.txt", 3, 3, printData=False)
@@ -146,7 +152,7 @@ def main():
     centers = centers.astype(int)
     center = centers[1]
     # center = np.array((203,338))
-    cv2.circle(image, center, 5, (0, 0, 255), -1)
+    cv.circle(image, center, 5, (0, 0, 255), -1)
 
 
 
@@ -225,13 +231,13 @@ def main():
 
     #---------------------- VISUALIZE -------------------------------------
     # Display images
-    cv2.imshow("image", image)
-    cv2.imshow("prediction", prediction)
-    cv2.imshow("depth", depth)
+    cv.imshow("image", image)
+    cv.imshow("prediction", prediction)
+    cv.imshow("depth", depth)
     # cv2.imshow("normal", normals)
 
     o3d.visualization.draw_geometries([pc, line_set])
-    cv2.waitKey(0)
+    cv.waitKey(0)
 
 
 
