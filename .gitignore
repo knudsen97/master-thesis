@@ -171,3 +171,6 @@ data/
 data_synthetic
 data_synthetic/
 *.tar
+*color-input/
+*depth-input/
+*label/
