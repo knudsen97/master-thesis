@@ -1,6 +1,32 @@
 #include "../inc/inference.h"
-Inference::Inference(std::string filepath)
+
+
+int Inference::init_numpy()
 {
+    import_array();
+    return 0;
+}
+
+PyObject* Inference::mat_to_parray(cv::Mat& image)
+{
+    npy_intp dims[3] = { image.rows, image.cols, image.channels() };
+    PyObject* pArray = PyArray_SimpleNew(3, dims, NPY_UINT8);
+    std::memcpy(PyArray_DATA((PyArrayObject*)pArray), image.data, image.total() * image.elemSize());
+
+    PyObject* tuple = PyTuple_New(1);
+    PyTuple_SetItem(tuple, 0, pArray);
+    return tuple;
+}
+
+Inference::Inference(std::string filepath, std::string function_name)
+{
+    // initialize python
+    Py_Initialize();
+    auto check = init_numpy();
+    if (check != 0) {
+        std::cerr << "Error initializing numpy" << std::endl;
+    }
+
     // find the subpath to file
     int file_idx = filepath.find_last_of('/');
     std::string sub_path = filepath.substr(0, file_idx);
@@ -17,8 +43,7 @@ Inference::Inference(std::string filepath)
     int ext_idx = filename.find_last_of('.');
     filename = filename.substr(0, ext_idx);
 
-    // add subpath to python path
-    Py_Initialize();
+    // add subpath to python path    
     PyRun_SimpleString("import sys");
     PyRun_SimpleString(append_string.c_str());
 
@@ -27,9 +52,9 @@ Inference::Inference(std::string filepath)
     if (!pModule) {
         std::cerr << "Error loading Python module" << std::endl;
     }
-
+    this->filename_ = filename;
+    this->function_name_ = function_name; // This is used in the predict function
 }
-
 
 Inference::~Inference()
 {

@@ -9,72 +9,112 @@
 
 class Inference {
 private:
-    const std::string PYTHON_INFERENCE_FUNCTION_NAME = "predict";
+    PyObject* mat_to_parray(cv::Mat& image);
+    int init_numpy();
+
 public:
-    Inference(std::string filepath);
+    /**
+     * \brief Constructor for Inference class.
+     * \param filepath Path to python file.
+     * \param function_name Name of the inference function.
+    */
+    Inference(std::string filepath, std::string function_name);
     ~Inference();
 
-    template<int channels>
-    cv::Mat PyArray_To_CvMat(PyArrayObject* array, int rows, int cols)
-    {
-        cv::Mat result(rows, cols, CV_32FC(channels));
-        // copy data from python array to cv::Mat
-        float* data = (float*)PyArray_DATA(array);
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                for (int k = 0; k < channels; k++) {
-                    result.at<cv::Vec<float, channels>>(i, j)[k] = data[i * cols * channels + j * channels + k];
-                }
-            }
-        }
-
-        return result;
-    }
-
-    template <int channels>
+    /**
+     * \brief Predicts the affordance map from an image.
+     * \tparam channels Number of channels in the recieving image. Default is 1.
+     * \tparam recieving_type Type of the recieving image. Default is double.
+     * \param image Image to be passed to python function.
+     * \return Affordance map.
+     */
+    template <int channels = 1, typename recieving_type = double>
     cv::Mat predict(cv::Mat image)
     {
-        // get function from pModule
-        pFunc = PyObject_GetAttrString(pModule, PYTHON_INFERENCE_FUNCTION_NAME.c_str());
-        if (!pFunc || !PyCallable_Check(pFunc)) {
-            std::cerr << "Error loading Python function" << std::endl;
+        // check if image is empty
+        if (image.empty()) {
+            std::cerr << "Error: image is empty" << std::endl;
+            return cv::Mat();
         }
 
-        // convert image to numpy array
-        cv::Mat image_float;
-        image.convertTo(image_float, CV_32F);
-        cv::Mat image_reshaped = image_float.reshape(1, 1);
-        npy_intp image_size[2] = { image_reshaped.rows, image_reshaped.cols };
-        PyObject* pArray = PyArray_SimpleNewFromData(2, image_size, NPY_FLOAT32, image_reshaped.data);
+        init_numpy(); // numpy needs to be initialized for each file using numpy
+        // get function from pModule
+        pFunc = PyObject_GetAttrString(pModule, this->function_name_.c_str());
+        if (!pFunc || !PyCallable_Check(pFunc)) {
+            std::cerr << "Error loading Python function" << std::endl;
+            return cv::Mat();
+        }
+
+
+        // // convert image to numpy array
+        PyObject* pArray = mat_to_parray(image);
         PyObject* pArgs = PyTuple_Pack(1, pArray);
 
         // call the python function and return as pValue
-        
         PyObject* pValue = PyObject_CallObject(pFunc, pArgs);
-        
+        if (PyErr_Occurred()) {
+            std::cerr << "Error: Python function threw an error" << std::endl;
+            PyErr_PrintEx(0);
+            PyErr_Clear(); // this will reset the error indicator so you can run Python code again
+        }
+        if (pValue == nullptr) {
+            std::cerr << "Error: pValue is NULL" << std::endl;
+            return cv::Mat();
+        }
 
         // pValue has to be an ndarray
-        if (PyArray_Check(pValue)) {
-            PyArrayObject *pArray = (PyArrayObject *)pValue;
+        // if (PyArray_Check(pValue)) { // this causes segmentation fault
+            PyArrayObject *resulted_pArray = (PyArrayObject *)pValue;
             // convert back from python to c value
-            npy_intp *shape = PyArray_SHAPE(pArray);
-            int dimensions = PyArray_NDIM(pArray);
+            npy_intp *shape = PyArray_SHAPE(resulted_pArray);
+            int dimensions = PyArray_NDIM(resulted_pArray);
             int rows = shape[0];
             int cols = shape[1];
             
-            cv::Mat result = PyArray_To_CvMat<channels>(pArray, rows, cols);
+            cv::Mat result = PyArray_To_CvMat<channels, recieving_type>(resulted_pArray, rows, cols);
             
+            Py_DECREF(resulted_pArray);
             Py_DECREF(pArray);
             return result;
-        }
-        else {
-            std::cerr << "Error: pValue is not an ndarray" << std::endl;
-            return cv::Mat();
-        }
+        // }
+        // else {
+        //     std::cerr << "Error: pValue is not an ndarray" << std::endl;
+        //     return cv::Mat();
+        // }
     }
 
-private:
 
+
+
+private:
+    /**
+     * \brief Converts cv::Mat to numpy array.
+     * \tparam channels Number of channels in the recieving image. Default is 1.
+     * \tparam recieving_type Type of the recieving image. Default is double.
+     * \param array array to be converted.
+     * \param rows Number of rows in the array.
+     * \param cols Number of columns in the array.
+     * \return cv::Mat.
+     */
+    template<int channels, typename recieving_type>
+    cv::Mat PyArray_To_CvMat(PyArrayObject* array, int rows, int cols)
+    {
+        
+        cv::Mat result(rows, cols, CV_MAKETYPE(cv::DataType<recieving_type>::depth, channels));
+        // copy data from python array to cv::Mat
+        recieving_type* data = (recieving_type*)PyArray_DATA(array);
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                for (int k = 0; k < channels; k++) {
+                    result.at<cv::Vec<recieving_type, channels>>(cv::Point(j, i))[k] = data[i * cols * channels + j * channels + k];
+                }
+            }
+        }
+        return result;
+    }
+    
+    std::string function_name_;
+    std::string filename_;
     PyObject *pModule;
     PyObject *pFunc;
 };
