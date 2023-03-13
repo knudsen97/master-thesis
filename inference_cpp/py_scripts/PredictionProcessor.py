@@ -245,7 +245,7 @@ def calculate_transformation(given_image):
     # cv.waitKey(0)
 
     R = np.eye(4, 4)
-    return mask
+    return prediction
 
 
 
