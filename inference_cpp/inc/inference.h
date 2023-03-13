@@ -26,15 +26,16 @@ public:
      * \tparam channels Number of channels in the recieving image. Default is 1.
      * \tparam recieving_type Type of the recieving image. Default is double.
      * \param image Image to be passed to python function.
-     * \return Affordance map.
+     * \param destination Image to store the result in.
+     * \return If inference from python was executed. True if successful, false otherwise.
      */
     template <int channels = 1, typename recieving_type = double>
-    cv::Mat predict(cv::Mat image)
+    bool predict(cv::Mat image, cv::Mat& destination)
     {
         // check if image is empty
         if (image.empty()) {
             std::cerr << "Error: image is empty" << std::endl;
-            return cv::Mat();
+            return 0;
         }
 
         init_numpy(); // numpy needs to be initialized for each file using numpy
@@ -42,7 +43,7 @@ public:
         pFunc = PyObject_GetAttrString(pModule, this->function_name_.c_str());
         if (!pFunc || !PyCallable_Check(pFunc)) {
             std::cerr << "Error loading Python function" << std::endl;
-            return cv::Mat();
+            return 0;
         }
 
 
@@ -59,11 +60,12 @@ public:
         }
         if (pValue == nullptr) {
             std::cerr << "Error: pValue is NULL" << std::endl;
-            return cv::Mat();
+            return 0;
         }
 
         // pValue has to be an ndarray
         // if (PyArray_Check(pValue)) { // this causes segmentation fault
+        if (pValue != nullptr) {
             PyArrayObject *resulted_pArray = (PyArrayObject *)pValue;
             // convert back from python to c value
             npy_intp *shape = PyArray_SHAPE(resulted_pArray);
@@ -71,11 +73,13 @@ public:
             int rows = shape[0];
             int cols = shape[1];
             
-            cv::Mat result = PyArray_To_CvMat<channels, recieving_type>(resulted_pArray, rows, cols);
+            destination = PyArray_To_CvMat<channels, recieving_type>(resulted_pArray, rows, cols);
             
             Py_DECREF(resulted_pArray);
             Py_DECREF(pArray);
-            return result;
+            return 1;
+        }
+        return 0;
         // }
         // else {
         //     std::cerr << "Error: pValue is not an ndarray" << std::endl;

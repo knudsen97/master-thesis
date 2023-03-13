@@ -3,6 +3,8 @@
 #include "inc/inference.h"
 #include "inc/test.h"
 
+
+
 int main() {
     cv::Mat image = cv::imread("../../data/color-input/000000-0.png");
     if (image.empty()) {
@@ -12,10 +14,15 @@ int main() {
 
     Inference inf("../py_scripts/PredictionProcessor.py", "calculate_transformation");
 
-    cv::Mat transformation;
-    transformation = inf.predict<3, uint8_t>(image);
-    std::cout << "transformation:" << std::endl;
-    cv::imshow("transformation", transformation);
+    cv::Mat returned_image;
+    bool sucess = inf.predict<3, uint8_t>(image, returned_image);
+    if (!sucess) {
+        std::cerr << "Error: could not predict" << std::endl;
+        return -1;
+    }
+    // std::cout << "transformation:" << std::endl;
+    // std::cout << transformation << std::endl;
+    cv::imshow("transformation", returned_image);
     cv::waitKey(0);
 
     std::cout << "test:" << std::endl;

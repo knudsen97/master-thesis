@@ -13,9 +13,9 @@ PyObject* Inference::mat_to_parray(cv::Mat& image)
     PyObject* pArray = PyArray_SimpleNew(3, dims, NPY_UINT8);
     std::memcpy(PyArray_DATA((PyArrayObject*)pArray), image.data, image.total() * image.elemSize());
 
-    PyObject* tuple = PyTuple_New(1);
-    PyTuple_SetItem(tuple, 0, pArray);
-    return tuple;
+    // PyObject* tuple = PyTuple_New(1);
+    // PyTuple_SetItem(tuple, 0, pArray);
+    return pArray;
 }
 
 Inference::Inference(std::string filepath, std::string function_name)

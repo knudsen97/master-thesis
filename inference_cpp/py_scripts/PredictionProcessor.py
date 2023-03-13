@@ -115,7 +115,7 @@ class PredictionProcessor:
 
 
 def calculate_transformation(given_image):
-        # Load image, GT mask, depth map, camera extrinsics and intrinsics
+    # Load image, GT mask, depth map, camera extrinsics and intrinsics
     loader = DataLoader()
     idName = "000028-0"
     datapath = "../../data/"
@@ -243,9 +243,10 @@ def calculate_transformation(given_image):
 
     # o3d.visualization.draw_geometries([pc, line_set])
     # cv.waitKey(0)
-
-    R = np.eye(4, 4)
-    return prediction
+    # print(f"Given image type: {type(given_image)}")
+    # print(f"Given image shape: {given_image.shape}")
+    # R = np.eye(4, 4)
+    return given_image
 
 
 
