@@ -177,3 +177,14 @@ data_synthetic/
 
 
 RobWork/EnabledRoboticsWorkcell/
+
+
+# Ignore models
+/models
+/models/
+
+
+
+.vscode/
+.vscode/*
+*/.vscode/*
