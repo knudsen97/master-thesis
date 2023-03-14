@@ -16,9 +16,10 @@ public:
     /**
      * \brief Constructor for Inference class.
      * \param filepath Path to python file.
-     * \param function_name Name of the inference function.
+     * \param inference_function Name of the inference function.
+     * \param load_function Name of the load function.
     */
-    Inference(std::string filepath, std::string function_name);
+    Inference(std::string filepath, std::string inference_function, std::string load_function);
     ~Inference();
 
     /**
@@ -39,22 +40,16 @@ public:
         }
 
         init_numpy(); // numpy needs to be initialized for each file using numpy
-        // get function from pModule
-        pFunc = PyObject_GetAttrString(pModule, this->function_name_.c_str());
-        if (!pFunc || !PyCallable_Check(pFunc)) {
-            std::cerr << "Error loading Python function" << std::endl;
-            return 0;
-        }
-
 
         // // convert image to numpy array
         PyObject* pArray = mat_to_parray(image);
-        PyObject* pArgs = PyTuple_Pack(1, pArray);
-
+        PyObject* pArgs = PyTuple_New( 2 ); //= PyTuple_Pack(1, pArray);
+        PyTuple_SetItem(pArgs, 0, pArray);
+        PyTuple_SetItem(pArgs, 1, this->pModel);
         // call the python function and return as pValue
-        PyObject* pValue = PyObject_CallObject(pFunc, pArgs);
+        PyObject* pValue = PyObject_CallObject(this->pInfFunc, pArgs);
         if (PyErr_Occurred()) {
-            std::cerr << "Error: Python function threw an error" << std::endl;
+            std::cerr << "Error: Python function threw an error while calling inference" << std::endl;
             PyErr_PrintEx(0);
             PyErr_Clear(); // this will reset the error indicator so you can run Python code again
         }
@@ -116,11 +111,11 @@ private:
         }
         return result;
     }
-    
-    std::string function_name_;
-    std::string filename_;
+
     PyObject *pModule;
-    PyObject *pFunc;
+    PyObject *pInfFunc;
+    PyObject *pLoadFunc;
+    PyObject *pModel;
 };
 
 

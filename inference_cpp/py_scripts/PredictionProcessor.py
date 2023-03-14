@@ -4,6 +4,19 @@ import numpy as np
 # import open3d as o3d
 import sys
 
+class Test:
+    """test class
+    """
+    def __init__(self):
+        pass
+
+    def print(self):
+        print("Hello World")
+    
+    def infer(self, image: np.ndarray):
+        return cv.flip(image, 1)
+    
+
 class DataLoader:
     def __init__(self):
         pass
@@ -112,9 +125,14 @@ class PredictionProcessor:
         return R
 
  
+def load_model():
+    test  = Test()
+    test.print()
+    return test
 
-
-def calculate_transformation(given_image):
+def calculate_transformation(given_image, model):
+    print("len(given_image):", given_image.shape)
+    model.print()
     # Load image, GT mask, depth map, camera extrinsics and intrinsics
     loader = DataLoader()
     idName = "000028-0"
@@ -246,11 +264,19 @@ def calculate_transformation(given_image):
     # print(f"Given image type: {type(given_image)}")
     # print(f"Given image shape: {given_image.shape}")
     # R = np.eye(4, 4)
-    return given_image
+    retVal = model.infer(given_image)
+    return retVal
 
 
 
 
 if __name__ == "__main__":
-    calculate_transformation(7)
+    # datapath = "../data/"
+    # sys.path.append(datapath)
+    # loader = DataLoader()
+    # idName = "000028-0"
+    # image = loader.load_image(f"{datapath}color-input/{idName}.png")
+    # model = Test()
+    # calculate_transformation(image, Test)
+    pass
     

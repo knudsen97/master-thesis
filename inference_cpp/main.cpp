@@ -12,7 +12,7 @@ int main() {
         return -1;
     }
 
-    Inference inf("../py_scripts/PredictionProcessor.py", "calculate_transformation");
+    Inference inf("../py_scripts/PredictionProcessor.py", "calculate_transformation", "load_model");
 
     cv::Mat returned_image;
     bool sucess = inf.predict<3, uint8_t>(image, returned_image);
