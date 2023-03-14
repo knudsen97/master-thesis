@@ -16,7 +16,7 @@ using namespace rwlibs::simulation;
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
-// #include <opencv2/calib3d.hpp>
+#include <opencv2/calib3d.hpp>
 #include <opencv2/imgproc.hpp>
 // #include <opencv2/rgbd/linemod.hpp>
 
@@ -35,13 +35,14 @@ class SimulatedRGBD
 private:
     SimulatedCamera::Ptr sim_cam;
     SimulatedScanner25D::Ptr sim_depth;
+    cv::Mat intrinsics;
 
 public:
     // Default constructor
     SimulatedRGBD();
 
     // Constructor
-    SimulatedRGBD(const SimulatedCamera &sim_cam, const SimulatedScanner25D &sim_depth);
+    SimulatedRGBD(const SimulatedCamera &sim_cam, const SimulatedScanner25D &sim_depth, const cv::Mat &intrinsics = cv::Mat());
 
     void convertImageToCV(const Image *image, cv::Mat &cv_image, int imgType = ImageType::BGR);
 
@@ -52,7 +53,8 @@ public:
     void acquireDepth(State &state, const Simulator::UpdateInfo &info);
 
     void getImage(cv::Mat &image_out, int imgType = ImageType::BGR);
-    void getDepth(std::shared_ptr<open3d::geometry::PointCloud> &pc_out);
+    void getPointCloudAndDepthImage(PointCloudPtr &pc_out, cv::Mat &depthImage_out);//, const cv::Mat &R, const cv::Mat &t);
+
 
     void close();
 
