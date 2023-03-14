@@ -30,6 +30,10 @@ find_package(RobWorkStudio REQUIRED)
 message("-- RobWorkStudio found: " ${RWS_ROOT})
 # -------------------------------------------- 
 
+# Find Python3 bindings
+find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Embed NumPy )
+include_directories(${PYTHON_INCLUDE_DIRS})
+
 
 # Include all local header and source files
 file(GLOB SOURCES
@@ -47,6 +51,10 @@ set(USER_LIBRARIES
   ${OpenCV_LIBS} 
   ${ROBWORK_LIBRARIES}
   RWS::sdurws_robworkstudioapp
+  Python3::NumPy 
+  Python3::Python 
+  z 
+  expat
   )
 
 set(USER_INCLUDE_DIRS
