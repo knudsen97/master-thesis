@@ -71,11 +71,13 @@ int main()
     std::cout << "Camera/depth properties: fov " << fovy << " width " << width << " height " << height
               << std::endl;
 
+
+
+    cv::Mat image;
+
     RobWorkStudioApp app("");
     RWS_START (app)
     {
-        Inference inf("../LoadModel.py", "Inference", "LoadModel");
-
         // Get RobWorkStudio instance
         RobWorkStudio* const rwstudio = app.getRobWorkStudio();
         rwstudio->postOpenWorkCell(wcFile);
@@ -122,107 +124,113 @@ int main()
         
 
         // Get image data
-        cv::Mat image;
         RealSense.acquireImage(state, info);
         RealSense.getImage(image, ImageType::BGR);   
-        cv::Mat returned_image;
-        bool sucess = inf.predict<3, uint8_t>(image, returned_image);
-
         
-        // Get depth image and point cloud
-        PointCloudPtr pc; // This is actually not really used for anything atm. Dont think it is needed?
-        cv::Mat depth;
-        RealSense.acquireDepth(state, info);
-        RealSense.getPointCloudAndDepthImage(pc, depth);
-
-        // Create PredictionProcessor object
-        double depth_scale = 1e4;
-        PredictionProcessor processor(depth_scale);
-
-        // Set intrinsics and extrinsics
-        auto camera_intrinsics = open3d::camera::PinholeCameraIntrinsic(width, height, intrinsics.at<double>(0, 0), intrinsics.at<double>(1, 1), intrinsics.at<double>(0, 2), intrinsics.at<double>(1, 2));
-        auto camera_extrinsics = Eigen::Matrix4d::Identity();
-        processor.setIntrinsicsAndExtrinsics(camera_intrinsics, camera_extrinsics);
-        
-        // Set flip matrix to flip point cloud to correct orientation
-        Eigen::Matrix4d flip_mat;
-            flip_mat << 1, 0, 0, 0,
-                        0, -1, 0, 0,
-                        0, 0, -1, 0,
-                        0, 0, 0, 1;
-
-        processor.setFlipMatrix(flip_mat);
-
-        // Create point cloud from depth image
-        PointCloudPtr pc_new;
-        bool flip = true;
-        processor.createPCFromDepth(depth, pc_new, flip);
-
-        // Draw circle in middle of image
-        cv::Point center = cv::Point(400, 200);
-        cv::circle(image, center, 5, cv::Scalar(0, 0, 255), -1);
-
-        // Estimate normals for point cloud and normalize them
-        processor.estimateAllNormals(pc_new, 0.05, 30, true);
-
-        // Convert pixel to 3d point
-        cv::Point3d center_3d;
-        processor.pixel2cam(depth, center, center_3d);
-
-        // Find index of closest point in point cloud to 3d center point
-        int min_index = processor.findIndexOfClosestPoint(pc_new, center_3d, flip);
-
-        // Get normal and 3d point from closest point in point cloud 
-        auto point_3d = pc_new->points_[min_index];
-        auto normal = pc_new->normals_[min_index];
-
-        // Flip normal if it points away from camera
-        if (normal(2) < 0)
-            normal = -normal;
-
-        cv::Mat R_obj_cam;
-        processor.computeRotationMatrixFromNormal(normal, R_obj_cam);
-        std::cout << "R_obj_cam: \n" << R_obj_cam << std::endl;
-
-        // Create transformation matrix of object in camera frame
-        cv::Mat T_obj_cam;
-        cv::hconcat(R_obj_cam, cv::Mat(center_3d), T_obj_cam);
-        cv::vconcat(T_obj_cam, cv::Mat::zeros(1, 4, CV_64F), T_obj_cam);
-        T_obj_cam.at<double>(3, 3) = 1;
-        std::cout << "T_obj_cam: \n" << T_obj_cam << std::endl;
-
-
-
-
-        // ------------------------------------------------------
-        // ------------- Visualization --------------------------
-        // ------------------------------------------------------
-        // Create normal vector line
-        double scale = 0.1;
-        auto line = open3d::geometry::LineSet();
-        line.points_.push_back(point_3d);
-        line.points_.push_back(point_3d + normal*scale);
-        line.lines_.push_back(Eigen::Vector2i(0, 1));
-        line.colors_.push_back(Eigen::Vector3d(1, 0, 0));
-        auto line_ptr = std::make_shared<open3d::geometry::LineSet>(line);
-
-        // Visualize image and point cloud
-        cv::imshow("Image", image);
-        cv::imshow("Depth", depth);
-        cv::imshow("Inference", returned_image);
-        open3d::visualization::VisualizerWithKeyCallback o3d_vis;
-        o3d_vis.CreateVisualizerWindow("PointCloud", width, height);
-        o3d_vis.AddGeometry(pc_new);
-        o3d_vis.AddGeometry(line_ptr);
-        o3d_vis.Run();
-
-
-
         // Close camera, scanner and RobWorkStudio
         RealSense.close();
         app.close();
     }
     RWS_END()
+
+    Inference inf("../LoadModel.py", "Inference", "LoadModel");
+    // PyThreadState* pystate = PyEval_SaveThread(); // Save the thread state
+        cv::Mat returned_image;
+
+
+        bool sucess = inf.predict<3, uint8_t>(image, returned_image);
+        // PyEval_RestoreThread(pystate); // Restore the thread state
+        
+        // Get depth image and point cloud
+        // PointCloudPtr pc; // This is actually not really used for anything atm. Dont think it is needed?
+        // cv::Mat depth;
+        // RealSense.acquireDepth(state, info);
+        // RealSense.getPointCloudAndDepthImage(pc, depth);
+
+        // // Create PredictionProcessor object
+        // double depth_scale = 1e4;
+        // PredictionProcessor processor(depth_scale);
+
+        // // Set intrinsics and extrinsics
+        // auto camera_intrinsics = open3d::camera::PinholeCameraIntrinsic(width, height, intrinsics.at<double>(0, 0), intrinsics.at<double>(1, 1), intrinsics.at<double>(0, 2), intrinsics.at<double>(1, 2));
+        // auto camera_extrinsics = Eigen::Matrix4d::Identity();
+        // processor.setIntrinsicsAndExtrinsics(camera_intrinsics, camera_extrinsics);
+        
+        // // Set flip matrix to flip point cloud to correct orientation
+        // Eigen::Matrix4d flip_mat;
+        //     flip_mat << 1, 0, 0, 0,
+        //                 0, -1, 0, 0,
+        //                 0, 0, -1, 0,
+        //                 0, 0, 0, 1;
+
+        // processor.setFlipMatrix(flip_mat);
+
+        // // Create point cloud from depth image
+        // PointCloudPtr pc_new;
+        // bool flip = true;
+        // processor.createPCFromDepth(depth, pc_new, flip);
+
+        // // Draw circle in middle of image
+        // cv::Point center = cv::Point(400, 200);
+        // cv::circle(image, center, 5, cv::Scalar(0, 0, 255), -1);
+
+        // // Estimate normals for point cloud and normalize them
+        // processor.estimateAllNormals(pc_new, 0.05, 30, true);
+
+        // // Convert pixel to 3d point
+        // cv::Point3d center_3d;
+        // processor.pixel2cam(depth, center, center_3d);
+
+        // // Find index of closest point in point cloud to 3d center point
+        // int min_index = processor.findIndexOfClosestPoint(pc_new, center_3d, flip);
+
+        // // Get normal and 3d point from closest point in point cloud 
+        // auto point_3d = pc_new->points_[min_index];
+        // auto normal = pc_new->normals_[min_index];
+
+        // // Flip normal if it points away from camera
+        // if (normal(2) < 0)
+        //     normal = -normal;
+
+        // cv::Mat R_obj_cam;
+        // processor.computeRotationMatrixFromNormal(normal, R_obj_cam);
+        // std::cout << "R_obj_cam: \n" << R_obj_cam << std::endl;
+
+        // // Create transformation matrix of object in camera frame
+        // cv::Mat T_obj_cam;
+        // cv::hconcat(R_obj_cam, cv::Mat(center_3d), T_obj_cam);
+        // cv::vconcat(T_obj_cam, cv::Mat::zeros(1, 4, CV_64F), T_obj_cam);
+        // T_obj_cam.at<double>(3, 3) = 1;
+        // std::cout << "T_obj_cam: \n" << T_obj_cam << std::endl;
+
+
+
+
+        // // ------------------------------------------------------
+        // // ------------- Visualization --------------------------
+        // // ------------------------------------------------------
+        // // Create normal vector line
+        // double scale = 0.1;
+        // auto line = open3d::geometry::LineSet();
+        // line.points_.push_back(point_3d);
+        // line.points_.push_back(point_3d + normal*scale);
+        // line.lines_.push_back(Eigen::Vector2i(0, 1));
+        // line.colors_.push_back(Eigen::Vector3d(1, 0, 0));
+        // auto line_ptr = std::make_shared<open3d::geometry::LineSet>(line);
+
+        // // Visualize image and point cloud
+        // cv::imshow("Image", image);
+        // cv::imshow("Depth", depth);
+        // cv::imshow("Inference", returned_image);
+        // open3d::visualization::VisualizerWithKeyCallback o3d_vis;
+        // o3d_vis.CreateVisualizerWindow("PointCloud", width, height);
+        // o3d_vis.AddGeometry(pc_new);
+        // o3d_vis.AddGeometry(line_ptr);
+        // o3d_vis.Run();
+
+
+
+
 
     // std::cout << "Press any key to exit" << std::endl;
     // cv::waitKey(0);
