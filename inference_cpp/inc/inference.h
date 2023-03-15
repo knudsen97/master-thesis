@@ -72,14 +72,11 @@ public:
             
             Py_DECREF(resulted_pArray);
             Py_DECREF(pArray);
+            Py_DECREF(pArgs);
+            Py_DECREF(pValue);
             return 1;
         }
         return 0;
-        // }
-        // else {
-        //     std::cerr << "Error: pValue is not an ndarray" << std::endl;
-        //     return cv::Mat();
-        // }
     }
 
 
@@ -105,7 +102,8 @@ private:
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 for (int k = 0; k < channels; k++) {
-                    result.at<cv::Vec<recieving_type, channels>>(cv::Point(j, i))[k] = data[i * cols * channels + j * channels + k];
+                    auto debug = data[i * cols * channels + j * channels + k];
+                    result.at<cv::Vec<recieving_type, channels>>(cv::Point(j, i))[k] = debug;
                 }
             }
         }
