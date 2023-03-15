@@ -18,7 +18,7 @@ PyObject* Inference::mat_to_parray(cv::Mat& image)
     return pArray;
 }
 
-Inference::Inference(std::string filepath, std::string function_name)
+Inference::Inference(std::string filepath, std::string inference_function, std::string load_function)
 {
     // initialize python
     Py_Initialize();
@@ -52,13 +52,33 @@ Inference::Inference(std::string filepath, std::string function_name)
     if (!pModule) {
         std::cerr << "Error loading Python module" << std::endl;
     }
-    this->filename_ = filename;
-    this->function_name_ = function_name; // This is used in the predict function
+
+    /*get functions from python file*/
+    // load model function
+    this->pLoadFunc = PyObject_GetAttrString(pModule, load_function.c_str());
+    if (!this->pLoadFunc || !PyCallable_Check(this->pLoadFunc)) {
+        std::cerr << "Error loading Python load function" << std::endl;
+    }
+
+    // load inference function
+    this->pInfFunc = PyObject_GetAttrString(pModule, inference_function.c_str());
+    if (!this->pInfFunc || !PyCallable_Check(this->pInfFunc)) {
+        std::cerr << "Error loading Python inference function" << std::endl;
+    }
+
+    // get model
+    this->pModel = PyObject_CallObject(this->pLoadFunc, nullptr);
+    if (PyErr_Occurred()) {
+        std::cerr << "Error: Python function threw an error while loading model" << std::endl;
+        PyErr_PrintEx(0);
+        PyErr_Clear(); // this will reset the error indicator so you can run Python code again
+    }
 }
 
 Inference::~Inference()
 {
-    Py_DECREF(pModule);
-    Py_DECREF(pFunc);
+    Py_DECREF(this->pModel);
+    Py_DECREF(this->pLoadFunc);
+    Py_DECREF(this->pInfFunc);
     Py_Finalize();
 }

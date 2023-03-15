@@ -2,6 +2,9 @@
 #include <iostream>
 #include <string>
 
+#include "../inc/inference.h"
+
+
 // Include RobWork headers
 #include <rw/core/Ptr.hpp>
 #include <rw/kinematics/State.hpp>
@@ -39,6 +42,7 @@ using namespace rws;
 
 int main()
 {
+
     std::string wcFile = "../../Project_WorkCell/Scene.wc.xml";
 
     const WorkCell::Ptr wc = WorkCellLoader::Factory::load(wcFile);
@@ -70,6 +74,8 @@ int main()
     RobWorkStudioApp app("");
     RWS_START (app)
     {
+        Inference inf("../LoadModel.py", "Inference", "LoadModel");
+
         // Get RobWorkStudio instance
         RobWorkStudio* const rwstudio = app.getRobWorkStudio();
         rwstudio->postOpenWorkCell(wcFile);
@@ -119,6 +125,9 @@ int main()
         cv::Mat image;
         RealSense.acquireImage(state, info);
         RealSense.getImage(image, ImageType::BGR);   
+        cv::Mat returned_image;
+        bool sucess = inf.predict<3, uint8_t>(image, returned_image);
+
         
         // Get depth image and point cloud
         PointCloudPtr pc; // This is actually not really used for anything atm. Dont think it is needed?
@@ -200,6 +209,7 @@ int main()
         // Visualize image and point cloud
         cv::imshow("Image", image);
         cv::imshow("Depth", depth);
+        cv::imshow("Inference", returned_image);
         open3d::visualization::VisualizerWithKeyCallback o3d_vis;
         o3d_vis.CreateVisualizerWindow("PointCloud", width, height);
         o3d_vis.AddGeometry(pc_new);
