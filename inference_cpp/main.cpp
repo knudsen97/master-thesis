@@ -24,8 +24,6 @@ int main() {
         std::cerr << "Error: could not predict" << std::endl;
         return -1;
     }
-    // std::cout << "transformation:" << std::endl;
-    // std::cout << transformation << std::endl;
     cv::imshow("cpp inf image", returned_image);
     cv::waitKey(0);
 
