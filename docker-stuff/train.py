@@ -152,12 +152,15 @@ def test(model, test_loader, criterion, device):
 
 def arg_parser():
     # Default values for command-line arguments
-    epochs_default = 30
+    epochs_default = 50
     encoder_depth_default = 3
-    lr_default = 0.00001
+    lr_default = 1e-04
     batch_size_default = 4
-    l2_penalization_default = 0.01
+    l2_penalization_default = None
+    decoder_use_batchnorm = False
+    decoder_attention_type = "scse"
     id_default = 0
+
     # Parse command-line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('-epochs', type=int, default=epochs_default, help='Number of epochs')
@@ -165,7 +168,10 @@ def arg_parser():
     parser.add_argument('-lr', type=float, default=lr_default, help='Learning rate')
     parser.add_argument('-batch_size', type=float, default=batch_size_default, help='Batch size')
     parser.add_argument('-l2', type=float, default=l2_penalization_default, help='L2 penalization (weight decay)')
+    parser.add_argument('-decoder_use_batchnorm', type=bool, default=decoder_use_batchnorm, help='Use batchnorm in decoder')
+    parser.add_argument('-decoder_attention_type', type=str, default=decoder_attention_type, help='Attention type in decoder')
     parser.add_argument('-id', type=int, default=id_default, help='id used for saving the results')
+
 
     return parser.parse_args()
 
@@ -173,6 +179,10 @@ def main():
     args = arg_parser()
 
     print(f"Using the following hyperparameters: {args}")
+   
+    # Found using the bottom function
+    mean =  [0.4543, 0.3444, 0.2966]#[0.4352, 0.3342, 0.2835] 
+    std = [0.2198, 0.2415, 0.2423]#[0.2291, 0.2290, 0.2181]
 
     # input_size = (480, 640)
     scaled_size = (128, 160)
@@ -181,10 +191,11 @@ def main():
         tf.Resize(scaled_size),
     ])
 
-    augmentations = "  Resize((128,160))\n  ColorJitter((0.7,1), (1), (0.7,1.3), (-0.1,0.1))\n   GaussianBlur(3)"
+    augmentations = "  Resize((128,160))\n  ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2)\n   GaussianBlur(3)"
     transform_augmentations = tf.Compose([
-        tf.ColorJitter((0.7,1), (1), (0.7,1.3), (-0.1,0.1)),
+        tf.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
         tf.GaussianBlur(3),
+        tf.Normalize(mean, std),
     ])
 
 
@@ -218,7 +229,9 @@ def main():
     assert device == torch.device("cuda:0") 
 
     encoder_depth = args.encoder_depth
-    decoder_channels = "(256, 128, 64)"
+    decoder_channels = "(128, 64, 32)"
+    decoder_use_batchnorm = args.decoder_use_batchnorm
+    decoder_attention_type = args.decoder_attention_type
 
     # Get ResNet101 pretrained model to use as encoder
     model = segmentation_models_pytorch.Unet(encoder_name='resnet101', 
@@ -226,9 +239,9 @@ def main():
                                             classes=3, 
                                             activation=None,
                                             encoder_depth=encoder_depth, 
-                                            decoder_channels = (256, 128, 64),
-                                            decoder_use_batchnorm = True,
-                                            decoder_attention_type = "scse",
+                                            decoder_channels = (128, 64, 32),
+                                            decoder_use_batchnorm = decoder_use_batchnorm,
+                                            decoder_attention_type = decoder_attention_type,
                                             )
 
     # print(model)
@@ -288,6 +301,14 @@ def main():
             print(f'Epoch {epoch}, test loss: {test_losses[-1]:.4f}, test recall/precision: {test_recall[-1]:.4f}/{test_precision[-1]:.4f}')
             writer.writerow([train_losses[-1], test_losses[-1], train_recall[-1].item(), train_precision[-1].item(), test_recall[-1].item(), test_precision[-1].item()])
 
+    # Save the model
+    torch.save(model.state_dict(), f'models/unet_resnet101_{args.id}.pt')
+
+    # Save model to load in c++
+    try:
+        torch.jit.save(torch.jit.script(model), f'jit_models/unet_resnet101_{args.id}.pt')
+    except:
+        print("Could not save model with jit.")
 
 
 
