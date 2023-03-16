@@ -9,7 +9,7 @@ matplotlib.use("TkAgg")
 from matplotlib import pyplot as plt
 import time
 
-from RobWork.Sensor import FrameGrabber
+from Sensor import FrameGrabber
 
 
 

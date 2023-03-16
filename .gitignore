@@ -171,6 +171,20 @@ data/
 data_synthetic
 data_synthetic/
 *.tar
+*color-input/
+*depth-input/
+*label/
 
 
 RobWork/EnabledRoboticsWorkcell/
+
+
+# Ignore models
+/models
+/models/
+
+
+
+.vscode/
+.vscode/*
+*/.vscode/*
