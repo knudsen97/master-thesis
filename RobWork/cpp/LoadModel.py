@@ -6,6 +6,7 @@ import numpy as np
 import torchvision.transforms as tf
 
 def LoadModel():
+    print("Loading model")
     path_to_model = "../../../models/first_model.pt"
 
     encoder_depth = 3
@@ -27,6 +28,7 @@ def LoadModel():
     return model
 
 def Inference(image, model):
+    print("Beginning inference")
     # Convert image to RGB
     image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
 
