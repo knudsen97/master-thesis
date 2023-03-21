@@ -7,4 +7,5 @@ print(f"Container ID: {container_id}")
 
 
 # Copy all results_*.csv files from the container to the host
-os.system(f"docker cp {container_id}:/train-docker/results/ . ")
+os.system(f"docker cp {container_id}:/train-docker/results/ results/ ")
+os.system(f"docker cp {container_id}:/train-docker/models/* models/ ")
