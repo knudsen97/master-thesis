@@ -156,9 +156,9 @@ def arg_parser():
     encoder_depth_default = 3
     lr_default = 1e-04
     batch_size_default = 4
-    l2_penalization_default = None
+    l2_penalization_default = 0
     decoder_use_batchnorm = False
-    decoder_attention_type = "scse"
+    decoder_attention_type = None
     id_default = 0
 
     # Parse command-line arguments
@@ -166,7 +166,7 @@ def arg_parser():
     parser.add_argument('-epochs', type=int, default=epochs_default, help='Number of epochs')
     parser.add_argument('-encoder_depth', type=int, default=encoder_depth_default, help='Depth of encoder')
     parser.add_argument('-lr', type=float, default=lr_default, help='Learning rate')
-    parser.add_argument('-batch_size', type=float, default=batch_size_default, help='Batch size')
+    parser.add_argument('-batch_size', type=int, default=batch_size_default, help='Batch size')
     parser.add_argument('-l2', type=float, default=l2_penalization_default, help='L2 penalization (weight decay)')
     parser.add_argument('-decoder_use_batchnorm', type=bool, default=decoder_use_batchnorm, help='Use batchnorm in decoder')
     parser.add_argument('-decoder_attention_type', type=str, default=decoder_attention_type, help='Attention type in decoder')
