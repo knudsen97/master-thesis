@@ -182,8 +182,14 @@ RobWork/EnabledRoboticsWorkcell/
 # Ignore models
 /models
 /models/
+*/models/
 
+*/figures/
+/figures/
+/figures
+*.pdf
 
+*.asv
 
 .vscode/
 .vscode/*
