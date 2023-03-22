@@ -2,7 +2,6 @@
 #include <iostream>
 #include <string>
 
-#include "../inc/inference.h"
 
 
 // Include RobWork headers
@@ -38,6 +37,7 @@ using namespace rws;
 // Include "inc" headers
 #include "../inc/Sensor.hpp"
 #include "../inc/PredictionProcessor.hpp"
+#include "../inc/inference.hpp"
 
 
 int main()
@@ -74,6 +74,7 @@ int main()
 
 
     cv::Mat image;
+    cv::Mat returned_image;
 
     RobWorkStudioApp app("");
     RWS_START (app)
@@ -133,12 +134,20 @@ int main()
     }
     RWS_END()
 
-    Inference inf("../LoadModel.py", "Inference", "LoadModel");
+    // Inference inf("../LoadModel.py", "Inference", "LoadModel");
     // PyThreadState* pystate = PyEval_SaveThread(); // Save the thread state
-        cv::Mat returned_image;
+        Inference inf("../../../models/temp_model.pt");
+        bool a = inf.predict(image, returned_image);
+        if (a)
+        {
+            std::cout << "Success" << std::endl;
+            cv::imshow("Returned image", returned_image);
+            cv::waitKey(0);
+        }
+        else
+            std::cout << "Failure" << std::endl;
 
-
-        bool sucess = inf.predict<3, uint8_t>(image, returned_image);
+        // bool sucess = inf.predict<3, uint8_t>(image, returned_image);
         // PyEval_RestoreThread(pystate); // Restore the thread state
         
         // Get depth image and point cloud
