@@ -48,8 +48,8 @@ FILE(GLOB_RECURSE SRC_FILES
 ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
 ${CMAKE_CURRENT_SOURCE_DIR}/inc/*.h)
 
-add_executable(inference_cpp main.cpp ${SRC_FILES})
-target_link_libraries(inference_cpp ${TORCH_LIBRARIES} ${OpenCV_LIBS} Python3::NumPy Python3::Python z expat)
+add_executable(inference_tester main.cpp ${SRC_FILES})
+target_link_libraries(inference_tester ${TORCH_LIBRARIES} ${OpenCV_LIBS} Python3::NumPy Python3::Python z expat)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
