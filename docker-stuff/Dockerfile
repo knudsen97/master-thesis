@@ -40,6 +40,7 @@ RUN python3 -mpip install torch==1.13.1+cu116 torchvision==0.14.1+cu116 --extra-
 
 # Copy the python files
 COPY docker-stuff/train.py .
+COPY docker-stuff/train_grid_search.py .
 
 RUN mkdir results
 RUN mkdir models
