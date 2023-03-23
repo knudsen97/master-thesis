@@ -180,9 +180,12 @@ RobWork/EnabledRoboticsWorkcell/
 
 
 # Ignore models
-/models
-/models/
-*/models/
+*pt
+*pth
+
+# Ignore hidden files
+.*
+_*
 
 */figures/
 /figures/
