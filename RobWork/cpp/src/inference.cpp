@@ -25,7 +25,7 @@ bool Inference::predict(const cv::Mat input, cv::Mat& output)
     int a = system(command.c_str());
     if (a != 0)
     {
-        std::cout << "Error: system call failed." << std::endl;
+        std::cerr << "Error: system call failed." << std::endl;
         return false;
     }
     cv::Mat returned_image = cv::imread("output.png");
@@ -66,4 +66,18 @@ bool Inference::denormalize_image(cv::Mat& image, std::vector<float> mean, std::
     image = image * cv::Scalar(std[0], std[1], std[2]);
     image = image + cv::Scalar(mean[0], mean[1], mean[2]);
     return true;
+}
+
+void Inference::change_image_color(cv::Mat& image, cv::Vec3b from_color, cv::Vec3b to_color)
+{
+    for (int i = 0; i < image.rows; i++)
+    {
+        for (int j = 0; j < image.cols; j++)
+        {
+            if (image.at<cv::Vec3b>(i, j) == from_color)
+            {
+                image.at<cv::Vec3b>(i, j) = to_color;
+            }
+        }
+    }
 }

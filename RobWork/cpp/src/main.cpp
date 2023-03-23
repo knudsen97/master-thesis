@@ -1,7 +1,8 @@
 // Standard headers
 #include <iostream>
 #include <string>
-
+#include <thread>         // std::thread
+#include <mutex>          // std::mutex
 
 
 // Include RobWork headers
@@ -39,6 +40,21 @@ using namespace rws;
 #include "../inc/PredictionProcessor.hpp"
 #include "../inc/inference.hpp"
 
+// void live_cam(cv::Mat& image, std::mutex& cam_mtx)
+// {
+//     int key = 0;
+//     while (cv::ord('q') != key)
+//     {
+//         while (cam_mtx.try_lock())
+//         {
+//             cv::imshow("Live camera", image);
+//             cv::waitKey(1);
+//         }
+//     }
+
+    
+
+// }
 
 int main()
 {
@@ -75,6 +91,12 @@ int main()
 
     cv::Mat image;
     cv::Mat returned_image;
+    std::mutex cam_mtx;
+
+    // TODO: make a live cam thread that can be updated, by updating image with realsense camera
+    // std::thread cam_thread(live_cam, std::ref(image), std::ref(cam_mtx));
+
+    bool a;
 
     RobWorkStudioApp app("");
     RWS_START (app)
@@ -126,7 +148,16 @@ int main()
 
         // Get image data
         RealSense.acquireImage(state, info);
-        RealSense.getImage(image, ImageType::BGR);   
+        cam_mtx.lock();
+        RealSense.getImage(image, ImageType::BGR);  
+        Inference::change_image_color(image, cv::Vec3b({255, 255, 255}), cv::Vec3b({40,90,120}));
+        Inference inf("../../../models/unet_resnet101_1_jit.pt");
+        auto time_start = std::chrono::high_resolution_clock::now();
+        a = inf.predict(image, returned_image);
+        auto time_end = std::chrono::high_resolution_clock::now();
+        cam_mtx.unlock();
+        std::cout << "Time taken: " << std::chrono::duration_cast<std::chrono::milliseconds>(time_end - time_start).count() << " ms" << std::endl;
+ 
         
         // Close camera, scanner and RobWorkStudio
         RealSense.close();
@@ -134,10 +165,6 @@ int main()
     }
     RWS_END()
 
-    // Inference inf("../LoadModel.py", "Inference", "LoadModel");
-    // PyThreadState* pystate = PyEval_SaveThread(); // Save the thread state
-        Inference inf("../../../models/temp_model.pt");
-        bool a = inf.predict(image, returned_image);
         if (a)
         {
             std::cout << "Success" << std::endl;

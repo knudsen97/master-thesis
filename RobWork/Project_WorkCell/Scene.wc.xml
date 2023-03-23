@@ -61,7 +61,8 @@
 <Frame name="Container" refframe="Table" type="Fixed">
 	<RPY>90 0 0</RPY> <Pos>0.3 0.15 0.12</Pos>		
 	<Drawable name="Container" refframe="Container">
-	<Polytope file="container/container" />
+		<RGB> 0 0 0.3 </RGB>
+		<Polytope file="container/container" />
 	</Drawable>
 </Frame>
 
