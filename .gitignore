@@ -183,6 +183,9 @@ RobWork/EnabledRoboticsWorkcell/
 *pt
 *pth
 
+# Ignore hidden files
+.*
+_*
 
 */figures/
 /figures/
