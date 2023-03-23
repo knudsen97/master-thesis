@@ -15,12 +15,11 @@ import argparse
 
 # Create custom dataset class
 class SegNetDataset(Dataset):
-    def __init__(self, data_dir, synthetic, transform=None, transform_augmentations=None):
+    def __init__(self, data_dir, synthetic, transform=None):#, transform_augmentations=None):
         self.synthetic = synthetic
         self.data_dir = data_dir
-
         self.transform = transform
-        self.transform_augmentations = transform_augmentations
+        # self.transform_augmentations = transform_augmentations
 
         self.images = sorted(os.listdir(os.path.join(data_dir, 'color-input')))
         self.masks  = sorted(os.listdir(os.path.join(data_dir, 'label')))
@@ -60,15 +59,42 @@ class SegNetDataset(Dataset):
             image = self.transform(image)
             mask = self.transform(mask)
             target_mask = self.transform(target_mask)
-        if self.transform_augmentations:
-            image = self.transform_augmentations(image)
+        # if self.transform_augmentations:
+        #     image = self.transform_augmentations(image)
+
+        # # Permute the image dimensions to (H, W, C)
+        # image = image.permute(1, 2, 0)
+        # mask = mask.permute(1, 2, 0)
+        # target_mask = target_mask.permute(1, 2, 0)
+
+        return image, target_mask, mask
+    
+class MapDataset(Dataset):
+    """
+    Given a dataset, creates a dataset which applies a mapping function
+    to its items (lazily, only when an item is called).
+
+    Note that data is not cloned/copied from the initial dataset.
+    """
+    def __init__(self, dataset, augmentations):
+        self.dataset = dataset
+        self.augmentations = augmentations
+
+    def __getitem__(self, index):
+        # print(self.dataset[index])
+        image, target_mask, mask = self.dataset[index]
+        if self.augmentations is not None:
+          image = self.augmentations(image)
 
         # Permute the image dimensions to (H, W, C)
         image = image.permute(1, 2, 0)
         mask = mask.permute(1, 2, 0)
         target_mask = target_mask.permute(1, 2, 0)
-
         return image, target_mask, mask
+
+    def __len__(self):
+        return len(self.dataset)
+    
 
 # Define function to calculate accuracy
 def accuracy(outputs, targets):
@@ -215,30 +241,34 @@ def f1_score(recall, precision):
     return 2 * (recall * precision) / (recall + precision)
 
 def main():
-    # Found using the bottom function
-    mean =  [0.4543, 0.3444, 0.2966]#[0.4352, 0.3342, 0.2835] 
-    std = [0.2198, 0.2415, 0.2423]#[0.2291, 0.2290, 0.2181]
-
-    # input_size = (480, 640)
+    # ImageNet mean and std: (Found using the bottom function)
+    mean =  [0.485, 0.456, 0.406] #[0.4543, 0.3444, 0.2966]#[0.4352, 0.3342, 0.2835] 
+    std = [0.229, 0.224, 0.225]#[0.2198, 0.2415, 0.2423]#[0.2291, 0.2290, 0.2181]
     scaled_size = (128, 160)
+
+    # Transforms to be applied to all images, masks and target masks
     transforms = tf.Compose([
         tf.ToTensor(), # This also converts from 0,255 to 0,1
         tf.Resize(scaled_size),
     ])
 
-    augmentations = "  Resize((128,160))\n  ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2)\n   GaussianBlur(3)"
-    transform_augmentations = tf.Compose([
+    # Augmentations for train and test images
+    transform_augmentations_train = tf.Compose([
         tf.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
         tf.GaussianBlur(3),
-        tf.Normalize(mean, std),
+        tf.Normalize(mean, std)
+    ])
+    transform_augmentations_test = tf.Compose([
+        tf.GaussianBlur(3),
+        tf.Normalize(mean, std)
     ])
 
 
     # Create dataset
     data_dir = 'data'
     data_syn_dir = 'data_synthetic'
-    dataset_real = SegNetDataset(data_dir=data_dir, synthetic=False, transform=transforms, transform_augmentations=transform_augmentations)
-    dataset_syn = SegNetDataset(data_dir=data_syn_dir, synthetic=True, transform=transforms, transform_augmentations=transform_augmentations)
+    dataset_real = SegNetDataset(data_dir=data_dir, synthetic=False, transform=transforms)#, transform_augmentations=transform_augmentations)
+    dataset_syn = SegNetDataset(data_dir=data_syn_dir, synthetic=True, transform=transforms)#, transform_augmentations=transform_augmentations)
 
     # Split dataset into train and test
     real_train_data, real_test_data = data.random_split(dataset_real, [int(len(dataset_real)*0.8), len(dataset_real)-int(len(dataset_real)*0.8)])
@@ -247,7 +277,11 @@ def main():
     # Concatenate the datasets
     train_data = data.ConcatDataset([real_train_data, synthetic_train_data])
     test_data  = data.ConcatDataset([real_test_data, synthetic_test_data])
-    
+
+    # Create new datasets with augmentations for training and nothing for test/validation.
+    train_data = MapDataset(train_data, augmentations=transform_augmentations_train)
+    test_data = MapDataset(test_data, augmentations=transform_augmentations_test)
+
     # Find GPU device
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("Using device: ", device)
@@ -257,79 +291,88 @@ def main():
     learning_rates = [1e-3, 1e-5, 1e-7]
     depths = [3, 4, 5]
     batch_sizes = [2, 4, 8]
-    epochs = 1
-    results = {}
-
+    epochs = 30
+    # results = {}
 
     train_id = 0
-    for lr in learning_rates:
-        for depth in depths:
-            for bs in batch_sizes:
-                # Create dataloaders
-                train_loader = data.DataLoader(train_data, batch_size=bs, shuffle=True, num_workers=4)
-                test_loader  = data.DataLoader(test_data, batch_size=bs, shuffle=False, num_workers=4)
-                criterion = get_criterion()
-                model = load_model(depth, device)
-                optimizer = get_optimizer(model, lr=lr, l2_penal=0.0, optimizer_name="Adam")
-                early_stopper = EarlyStopper(patience=4, min_delta=0.05)
 
-                train_losses, test_losses     = [], []
-                train_recall, train_precision = [], []
-                test_recall, test_precision   = [], []
+    with open('results_grid_search/grid_search_results.csv', 'w') as f:
+        f.write("learning_rate,depth,batch_size,recall,precision,f1_score\n")
+        for lr in learning_rates:
+            for depth in depths:
+                for bs in batch_sizes:
+                    # Create dataloaders
+                    train_loader = data.DataLoader(train_data, batch_size=bs, shuffle=True, num_workers=4)
+                    test_loader  = data.DataLoader(test_data, batch_size=bs, shuffle=False, num_workers=4)
+                    criterion = get_criterion()
+                    model = load_model(depth, device)
+                    optimizer = get_optimizer(model, lr=lr, l2_penal=0.0, optimizer_name="Adam")
+                    early_stopper = EarlyStopper(patience=3, min_delta=0.01)
 
-                csv_file_path = f'results_grid_search/results{train_id}.csv'
-                with open(csv_file_path, 'w', newline='') as csv_file:
-                    writer = csv.writer(csv_file)
+                    train_losses, test_losses     = [], []
+                    train_recall, train_precision = [], []
+                    test_recall, test_precision   = [], []
 
-                    # Write the headers if the file is empty
-                    if csv_file.tell() == 0:
-                        # Write the hyperparameters used for this test
-                        writer.writerow(['epochs', 'encoder_depth', 'lr', 'batch_size', 'l2_penalization'])
-                        writer.writerow([epochs, depth, lr, bs, 0.0])
+                    csv_file_path = f'results_grid_search/results{train_id}.csv'
+                    with open(csv_file_path, 'w', newline='') as csv_file:
+                        writer = csv.writer(csv_file)
 
-                        # Write the results headers
-                        writer.writerow(['train_losses', 'test_losses', 'train_recall', 'train_precision', 'test_recall', 'test_precision'])
+                        # Write the headers if the file is empty
+                        if csv_file.tell() == 0:
+                            # Write the hyperparameters used for this test
+                            writer.writerow(['epochs', 'encoder_depth', 'lr', 'batch_size', 'l2_penalization'])
+                            writer.writerow([epochs, depth, lr, bs, 0.0])
 
-                    # Start training and testing
-                    for epoch in range(epochs):
-                        # Print current epoch, lr, depth, batch size
-                        print(f"Epoch: {epoch}, lr: {lr}, depth: {depth}, batch size: {bs}")
-                        # Train
-                        train_loss, train_rec, train_prec = train(model, train_loader, criterion, optimizer, device)
-                        train_losses.append(train_loss)
-                        train_recall.append(train_rec)
-                        train_precision.append(train_prec)
+                            # Write the results headers
+                            writer.writerow(['train_losses', 'test_losses', 'train_recall', 'train_precision', 'test_recall', 'test_precision'])
 
-                        # Print
-                        print(f'Epoch {epoch}, train loss: {train_losses[-1]:.4f}, train recall/precision: {train_recall[-1]:.4f}/{train_precision[-1]:.4f}')
+                        # Start training and testing
+                        for epoch in range(epochs):
+                            # Print current epoch, lr, depth, batch size
+                            print(f"Epoch: {epoch}, lr: {lr}, depth: {depth}, batch size: {bs}")
+                            # Train
+                            train_loss, train_rec, train_prec = train(model, train_loader, criterion, optimizer, device)
+                            train_losses.append(train_loss)
+                            train_recall.append(train_rec)
+                            train_precision.append(train_prec)
 
-                        # Test
-                        test_loss, test_rec, test_prec = test(model, test_loader, criterion, device)
-                        test_losses.append(test_loss)
-                        test_recall.append(test_rec)
-                        test_precision.append(test_prec)   
+                            # Print
+                            print(f'Epoch {epoch}, train loss: {train_losses[-1]:.4f}, train recall/precision: {train_recall[-1]:.4f}/{train_precision[-1]:.4f}')
 
-                        # Print
-                        print(f'Epoch {epoch}, test loss: {test_losses[-1]:.4f}, test recall/precision: {test_recall[-1]:.4f}/{test_precision[-1]:.4f}')
-                        writer.writerow([train_losses[-1], test_losses[-1], train_recall[-1].item(), train_precision[-1].item(), test_recall[-1].item(), test_precision[-1].item()])
-                        if early_stopper.early_stop(test_losses[-1]):
-                            break
-                results[(lr, depth, bs)] = (test_recall[-1], test_precision[-1], f1_score(test_recall[-1], test_precision[-1]))
-                train_id += 1
+                            # Test
+                            test_loss, test_rec, test_prec = test(model, test_loader, criterion, device)
+                            test_losses.append(test_loss)
+                            test_recall.append(test_rec)
+                            test_precision.append(test_prec)   
+
+                            # Print
+                            print(f'Epoch {epoch}, test loss: {test_losses[-1]:.4f}, test recall/precision: {test_recall[-1]:.4f}/{test_precision[-1]:.4f}')
+                            writer.writerow([train_losses[-1], test_losses[-1], train_recall[-1].item(), train_precision[-1].item(), test_recall[-1].item(), test_precision[-1].item()])
+                            if early_stopper.early_stop(test_losses[-1]):
+                                break
+                    # results[(lr, depth, bs)] = (test_recall[-1].item(), test_precision[-1].item(), f1_score(test_recall[-1].item(), test_precision[-1].item()))
+                    train_id += 1
+
+                    # Save recall, precision, f1 score to csv file for grid search table
+                    recall = round(test_recall[-1].item(), 2) 
+                    precision = round(test_precision[-1].item(), 2)
+                    f1 = round(f1_score(test_recall[-1].item(), test_precision[-1].item()), 2)
+
+                    f.write(f"{lr},{depth},{bs},{recall},{precision},{f1}\n")
 
 
     # Print the results to a csv file
-    with open('results_grid_search/grid_search_results.csv', 'w') as f:
-        f.write("learning_rate,depth,batch_size,recall,precision,f1_score\n")
-        for key in results.keys():
-            lr, depth, bs = key
+    # with open('results_grid_search/grid_search_results.csv', 'w') as f:
+    #     f.write("learning_rate,depth,batch_size,recall,precision,f1_score\n")
+    #     for key in results.keys():
+    #         lr, depth, bs = key
 
-            # Extract the values with 2 decimal places
-            recall = round(results[key][0], 2)
-            precision = round(results[key][1], 2)
-            f1 = round(results[key][2], 2)
+    #         # Extract the values with 2 decimal places
+    #         recall = round(results[key][0], 2)
+    #         precision = round(results[key][1], 2)
+    #         f1 = round(results[key][2], 2)
 
-            f.write(f"{lr},{depth},{bs},{recall},{precision},{f1}\n")
+    #         f.write(f"{lr},{depth},{bs},{recall},{precision},{f1}\n")
  
 
 
