@@ -60,15 +60,42 @@ class SegNetDataset(Dataset):
             image = self.transform(image)
             mask = self.transform(mask)
             target_mask = self.transform(target_mask)
-        if self.transform_augmentations:
-            image = self.transform_augmentations(image)
+        # if self.transform_augmentations:
+        #     image = self.transform_augmentations(image)
+
+        # # Permute the image dimensions to (H, W, C)
+        # image = image.permute(1, 2, 0)
+        # mask = mask.permute(1, 2, 0)
+        # target_mask = target_mask.permute(1, 2, 0)
+
+        return image, target_mask, mask
+
+class MapDataset(Dataset):
+    """
+    Given a dataset, creates a dataset which applies a mapping function
+    to its items (lazily, only when an item is called).
+
+    Note that data is not cloned/copied from the initial dataset.
+    """
+    def __init__(self, dataset, augmentations):
+        self.dataset = dataset
+        self.augmentations = augmentations
+
+    def __getitem__(self, index):
+        # print(self.dataset[index])
+        image, target_mask, mask = self.dataset[index]
+        if self.augmentations is not None:
+          image = self.augmentations(image)
 
         # Permute the image dimensions to (H, W, C)
         image = image.permute(1, 2, 0)
         mask = mask.permute(1, 2, 0)
         target_mask = target_mask.permute(1, 2, 0)
-
         return image, target_mask, mask
+
+    def __len__(self):
+        return len(self.dataset)
+
 
 # Define function to calculate accuracy
 def accuracy(outputs, targets):
@@ -180,22 +207,26 @@ def main():
 
     print(f"Using the following hyperparameters: {args}")
    
-    # Found using the bottom function
-    mean =  [0.4543, 0.3444, 0.2966]#[0.4352, 0.3342, 0.2835] 
-    std = [0.2198, 0.2415, 0.2423]#[0.2291, 0.2290, 0.2181]
-
-    # input_size = (480, 640)
+    # ImageNet mean and std: (Found using the bottom function)
+    mean =  [0.485, 0.456, 0.406] #[0.4543, 0.3444, 0.2966]#[0.4352, 0.3342, 0.2835] 
+    std = [0.229, 0.224, 0.225]#[0.2198, 0.2415, 0.2423]#[0.2291, 0.2290, 0.2181]
     scaled_size = (128, 160)
+    
+    # Transforms to be applied to all images, masks and target masks
     transforms = tf.Compose([
         tf.ToTensor(), # This also converts from 0,255 to 0,1
         tf.Resize(scaled_size),
     ])
 
-    augmentations = "  Resize((128,160))\n  ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2)\n   GaussianBlur(3)"
-    transform_augmentations = tf.Compose([
+    # Augmentations for train and test images
+    transform_augmentations_train = tf.Compose([
         tf.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
         tf.GaussianBlur(3),
-        tf.Normalize(mean, std),
+        tf.Normalize(mean, std)
+    ])
+    transform_augmentations_test = tf.Compose([
+        tf.GaussianBlur(3),
+        tf.Normalize(mean, std)
     ])
 
 
@@ -212,6 +243,10 @@ def main():
     # Concatenate the datasets
     train_data = data.ConcatDataset([real_train_data, synthetic_train_data])
     test_data  = data.ConcatDataset([real_test_data, synthetic_test_data])
+
+    # Create new datasets with augmentations for training and nothing for test/validation.
+    train_data = MapDataset(train_data, augmentations=transform_augmentations_train)
+    test_data = MapDataset(test_data, augmentations=transform_augmentations_test)
 
     # Create dataloaders
     batch_size = args.batch_size
