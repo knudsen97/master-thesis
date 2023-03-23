@@ -43,6 +43,8 @@ COPY docker-stuff/train.py .
 COPY docker-stuff/train_grid_search.py .
 
 RUN mkdir results
+RUN mkdir results_grid_search
+
 RUN mkdir models
 RUN mkdir jit_models
 

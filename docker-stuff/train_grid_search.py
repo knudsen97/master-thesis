@@ -257,13 +257,11 @@ def main():
     learning_rates = [1e-3, 1e-5, 1e-7]
     depths = [3, 4, 5]
     batch_sizes = [2, 4, 8]
-    epochs = 30
+    epochs = 1
     results = {}
 
-    train_losses, test_losses     = [], []
-    train_recall, train_precision = [], []
-    test_recall, test_precision   = [], []
 
+    train_id = 0
     for lr in learning_rates:
         for depth in depths:
             for bs in batch_sizes:
@@ -274,35 +272,54 @@ def main():
                 model = load_model(depth, device)
                 optimizer = get_optimizer(model, lr=lr, l2_penal=0.0, optimizer_name="Adam")
                 early_stopper = EarlyStopper(patience=4, min_delta=0.05)
-                
-                # Start training and testing
-                for epoch in range(epochs):
-                    # Print current epoch, lr, depth, batch size
-                    print(f"Epoch: {epoch}, lr: {lr}, depth: {depth}, batch size: {bs}")
-                    # Train
-                    train_loss, train_rec, train_prec = train(model, train_loader, criterion, optimizer, device)
-                    train_losses.append(train_loss)
-                    train_recall.append(train_rec)
-                    train_precision.append(train_prec)
 
-                    # Print
-                    print(f'Epoch {epoch}, train loss: {train_losses[-1]:.4f}, train recall/precision: {train_recall[-1]:.4f}/{train_precision[-1]:.4f}')
+                train_losses, test_losses     = [], []
+                train_recall, train_precision = [], []
+                test_recall, test_precision   = [], []
 
-                    # Test
-                    test_loss, test_rec, test_prec = test(model, test_loader, criterion, device)
-                    test_losses.append(test_loss)
-                    test_recall.append(test_rec)
-                    test_precision.append(test_prec)   
+                csv_file_path = f'results_grid_search/results{train_id}.csv'
+                with open(csv_file_path, 'w', newline='') as csv_file:
+                    writer = csv.writer(csv_file)
 
-                    # Print
-                    print(f'Epoch {epoch}, test loss: {test_losses[-1]:.4f}, test recall/precision: {test_recall[-1]:.4f}/{test_precision[-1]:.4f}')
-                    if early_stopper.step(test_losses[-1]):
-                        break
+                    # Write the headers if the file is empty
+                    if csv_file.tell() == 0:
+                        # Write the hyperparameters used for this test
+                        writer.writerow(['epochs', 'encoder_depth', 'lr', 'batch_size', 'l2_penalization'])
+                        writer.writerow([epochs, depth, lr, bs, 0.0])
+
+                        # Write the results headers
+                        writer.writerow(['train_losses', 'test_losses', 'train_recall', 'train_precision', 'test_recall', 'test_precision'])
+
+                    # Start training and testing
+                    for epoch in range(epochs):
+                        # Print current epoch, lr, depth, batch size
+                        print(f"Epoch: {epoch}, lr: {lr}, depth: {depth}, batch size: {bs}")
+                        # Train
+                        train_loss, train_rec, train_prec = train(model, train_loader, criterion, optimizer, device)
+                        train_losses.append(train_loss)
+                        train_recall.append(train_rec)
+                        train_precision.append(train_prec)
+
+                        # Print
+                        print(f'Epoch {epoch}, train loss: {train_losses[-1]:.4f}, train recall/precision: {train_recall[-1]:.4f}/{train_precision[-1]:.4f}')
+
+                        # Test
+                        test_loss, test_rec, test_prec = test(model, test_loader, criterion, device)
+                        test_losses.append(test_loss)
+                        test_recall.append(test_rec)
+                        test_precision.append(test_prec)   
+
+                        # Print
+                        print(f'Epoch {epoch}, test loss: {test_losses[-1]:.4f}, test recall/precision: {test_recall[-1]:.4f}/{test_precision[-1]:.4f}')
+                        writer.writerow([train_losses[-1], test_losses[-1], train_recall[-1].item(), train_precision[-1].item(), test_recall[-1].item(), test_precision[-1].item()])
+                        if early_stopper.early_stop(test_losses[-1]):
+                            break
                 results[(lr, depth, bs)] = (test_recall[-1], test_precision[-1], f1_score(test_recall[-1], test_precision[-1]))
+                train_id += 1
 
 
     # Print the results to a csv file
-    with open('results/grid_search_results.csv', 'w') as f:
+    with open('results_grid_search/grid_search_results.csv', 'w') as f:
         f.write("learning_rate,depth,batch_size,recall,precision,f1_score\n")
         for key in results.keys():
             lr, depth, bs = key
