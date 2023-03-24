@@ -54,6 +54,8 @@ public:
     */
     static bool denormalize_image(cv::Mat& image, std::vector<float> mean, std::vector<float> std);
 
+    static void change_image_color(cv::Mat& image, cv::Vec3b from_color, cv::Vec3b to_color);
+
 private:
     std::string model_path;
     // torch::jit::script::Module model;

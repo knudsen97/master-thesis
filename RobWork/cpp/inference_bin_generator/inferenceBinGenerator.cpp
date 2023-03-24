@@ -47,13 +47,11 @@ bool convert_tensor_to_mat(const torch::Tensor& tensor, cv::Mat& opencv_mat) {
  * @param tensor The tensor to save the converted mat to.
  * @return true if the conversion was successful, false otherwise.
 */
-bool mat_to_tensor(const cv::Mat img, torch::Tensor& tensor)
+bool mat_to_tensor(const cv::Mat& img, torch::Tensor& tensor)
 {
     // Convert the cv::Mat to a pytorch tensor
-    tensor = torch::from_blob(img.data, { img.rows, img.cols, img.channels() }, at::kByte);
+    tensor = torch::from_blob(img.data, { img.rows, img.cols, img.channels() }, at::kFloat);
     tensor = tensor.permute({ 2, 0, 1 });
-    tensor = tensor.toType(torch::kFloat);
-    tensor = tensor.div(255);
     tensor = tensor.unsqueeze(0);
     return true;
 }
@@ -65,7 +63,7 @@ bool mat_to_tensor(const cv::Mat img, torch::Tensor& tensor)
  * @param path_to_model The path to the model. Default is "../models/temp_model.pt".
  * @return true if the inference was successful, false otherwise.
 */
-bool inference(cv::Mat input, cv::Mat& returned_image, std::string path_to_model)
+bool inference(const cv::Mat& input, cv::Mat& returned_image, std::string path_to_model)
 {
     // Load the model
     torch::jit::script::Module module;
@@ -73,7 +71,7 @@ bool inference(cv::Mat input, cv::Mat& returned_image, std::string path_to_model
         module = torch::jit::load(path_to_model);
     }
     catch (const c10::Error& e) {
-        std::cerr << "error loading the model at: " << path_to_model << std::endl;
+        std::cerr << "Error loading the model at: " << path_to_model << std::endl;
         return false;
     }
 
@@ -97,24 +95,81 @@ bool inference(cv::Mat input, cv::Mat& returned_image, std::string path_to_model
 }
 
 /**
+ * @brief Run inference on the model.
+ * @param input The input image.
+ * @param returned_image The image returned by the model.
+ * @param path_to_model The path to the model. Default is "../models/temp_model.pt".
+ * @return true if the inference was successful, false otherwise.
+*/
+bool inference(const torch::Tensor& input, torch::Tensor& returned_image, std::string path_to_model)
+{
+    // Load the model
+    torch::jit::script::Module module;
+    try {
+        module = torch::jit::load(path_to_model);
+    }
+    catch (const c10::Error& e) {
+        std::cerr << "Error loading the model at: " << path_to_model << std::endl;
+        return false;
+    }
+
+    // Convert the input image to a tensor
+    std::vector<torch::jit::IValue> inputs;
+    torch::Tensor tensor;
+    inputs.push_back(tensor);
+    // std::cout << "input shape: " << input.size() << std::endl;
+    // std::cout << "tensor shape: " << tensor.sizes() << std::endl;
+
+    // Run the model and turn its output into a tensor
+    torch::Tensor output = module.forward(inputs).toTensor();
+
+    // Convert the tensor to a cv::Mat
+    output = output.squeeze();
+    output = output.permute({ 1, 2, 0 });
+    returned_image = output;
+    
+    return true;
+}
+
+/**
  * @brief Normalize an image.
  * @param image The image to normalize.
  * @param mean The mean to subtract from the image.
  * @param std The standard deviation to divide the image by.
  * @return true if the normalization was successful, false otherwise.
 */
-bool normalize_image(cv::Mat& image, std::vector<float> mean, std::vector<float> std)
+bool normalize_image(cv::Mat& image, const std::vector<float>& mean, const std::vector<float>& std)
 {
     if (image.empty())
     {
-        std::cout << "Error: image is empty." << std::endl;
+        std::cerr << "Error: image is empty." << std::endl;
         return false;
     }
     if (mean.size() != 3 || std.size() != 3)
     {
-        std::cout << "Error: mean and std must be of size 3." << std::endl;
+        std::cerr << "Error: mean and std must be of size 3." << std::endl;
         return false;
     }
+    image.convertTo(image, CV_32FC3, 1.0 / 255.0);
+    image = image - cv::Scalar(mean[0], mean[1], mean[2]);
+    image = image / cv::Scalar(std[0], std[1], std[2]);
+    return true;
+}
+/**
+ * @brief Normalize an image.
+ * @param image The image to normalize.
+ * @param mean The mean to subtract from the image.
+ * @param std The standard deviation to divide the image by.
+ * @return true if the normalization was successful, false otherwise.
+*/
+bool normalize_image(cv::Mat& image, const std::array<float, 3>& mean, const std::array<float, 3>& std)
+{
+    if (image.empty())
+    {
+        std::cerr << "Error: image is empty." << std::endl;
+        return false;
+    }
+    image.convertTo(image, CV_32FC3, 1.0 / 255.0);
     image = image - cv::Scalar(mean[0], mean[1], mean[2]);
     image = image / cv::Scalar(std[0], std[1], std[2]);
     return true;
@@ -127,16 +182,41 @@ bool normalize_image(cv::Mat& image, std::vector<float> mean, std::vector<float>
  * @param std The standard deviation to multiply the image by.
  * @return true if the denormalization was successful, false otherwise.
 */
-bool denormalize_image(cv::Mat& image, std::vector<float> mean, std::vector<float> std)
+bool denormalize_image(cv::Mat& image, const std::vector<float> mean, const std::vector<float> std)
 {
     if (image.empty())
     {
-        std::cout << "Error: image is empty." << std::endl;
+        std::cerr << "Error: image is empty." << std::endl;
         return false;
     }
     if (mean.size() != 3 || std.size() != 3)
     {
-        std::cout << "Error: mean and std must be of size 3." << std::endl;
+        std::cerr << "Error: mean and std must be of size 3." << std::endl;
+        return false;
+    }
+    cv::Mat bands[3], merged;
+    split(image, bands);
+    for (int i = 0; i < 3; i++)
+    {
+        bands[i] = bands[i] * std[i];
+        bands[i] = bands[i] + mean[i];
+    }
+    cv::merge(bands,3, merged);
+    return true;
+}
+
+/**
+ * @brief Denormalize an image.
+ * @param image The image to denormalize.
+ * @param mean The mean to add to the image.
+ * @param std The standard deviation to multiply the image by.
+ * @return true if the denormalization was successful, false otherwise.
+*/
+bool denormalize_image(cv::Mat& image, const std::array<float, 3> mean, const std::array<float, 3> std)
+{
+    if (image.empty())
+    {
+        std::cerr << "Error: image is empty." << std::endl;
         return false;
     }
     cv::Mat bands[3], merged;
@@ -158,39 +238,45 @@ int main(int argc, char** argv){
     }
     else
     {
-        path_to_model = "../../../../models/temp_model.pt";
+        path_to_model = "../../../../models/unet_resnet101_1_jit.pt";
     }
     // define mean and std_dev
-    std::vector<float> mean = {0.2966, 0.3444, 0.4543}; // mean = [0.4543, 0.3444, 0.2966] [R, G, B]
-    std::vector<float> std_dev = {0.2423, 0.2415, 0.2198};// std_dev = [0.2198, 0.2415, 0.2423] [R, G, B]
+    std::array<float, 3> mean = {0.2966, 0.3444, 0.4543}; // mean = [0.4543, 0.3444, 0.2966] [R, G, B]
+    std::array<float, 3> std_dev = {0.2198, 0.2415, 0.2423};// std_dev = [0.2198, 0.2415, 0.2423] [R, G, B]
 
     // read image
-    cv::Mat input_image = cv::imread("input.png");
+    cv::Mat input_image = cv::imread("input.png", cv::IMREAD_COLOR);
+    // cv::imshow("input", input_image);
+    // cv::waitKey(0);
     if (input_image.empty())
     {
-        std::cout << "Error: could not read input.png." << std::endl;
+        std::cerr << "Error: could not read input.png." << std::endl;
         return -1;
     }
-
+    cv::Vec <uchar, 3> debug;
     // transform image
     cv::Mat input_image_resized;
-    cv::resize(input_image, input_image_resized, cv::Size(128, 160));
-    normalize_image(input_image_resized, mean, std_dev);
+    torch::Tensor input_tensor;
+
+    cv::resize(input_image, input_image, cv::Size(160, 128));
+    normalize_image(input_image, mean, std_dev);
+    // mat_to_tensor(input_image, input_tensor);
+    // cv::cvtColor(input_image, input_image, cv::COLOR_BGR2RGB);
 
     // inference
     cv::Mat returned_image;
-    if (!inference(input_image_resized, returned_image, path_to_model))
+    if (!inference(input_image, returned_image, path_to_model))
     {
-        std::cout << "Error: inference failed." << std::endl;
+        std::cerr << "Error: inference failed." << std::endl;
         return -1;
     }
 
     // reverse transform image
-    cv::Mat returned_image_resized;
-    cv::resize(returned_image, returned_image_resized, cv::Size(640, 480));
-    denormalize_image(returned_image_resized, mean, std_dev);
+    cv::cvtColor(returned_image, returned_image, cv::COLOR_RGB2BGR);
+    cv::resize(returned_image, returned_image, cv::Size(640, 480));
+    denormalize_image(returned_image, mean, std_dev);
 
     // save image
-    cv::imwrite("output.png", returned_image_resized);
+    cv::imwrite("output.png", returned_image);
     return 0;
 }
