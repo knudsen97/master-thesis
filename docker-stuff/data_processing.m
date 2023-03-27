@@ -14,13 +14,18 @@ csvfolders=filefolders(endsWith(filenames,'.csv'));
 %Make a cell array of strings containing the full file locations of the
 %files.
 files=fullfile(csvfolders,csvfiles);
-
 % Skip first file (grid_search_results.csv)
 files=files(2:end);
 
-total_epochs_elapsed = [];
-% length(files)
+% Sort the cell array
+files = natsortfiles(files);
 
+% Define empty arrays for grid search table
+total_epochs_elapsed = [];
+delta_loss = [];
+recalls = [];
+precisions = [];
+f1s = [];
 
 for file_idx = 1:length(files)
     fig1 = ((file_idx-1)*3+1);
@@ -53,60 +58,75 @@ for file_idx = 1:length(files)
     test_recall     = A(:,5);
     test_precision  = A(:,6);
     epochs_elapsed = length(train_losses);
-    total_epochs_elapsed = [total_epochs_elapsed, epochs_elapsed];
+    test = test_recall(end);
+    % For the Grid Search Table. The one I generated in Python was
+    % apparently wrong..
+    total_epochs_elapsed = [total_epochs_elapsed; epochs_elapsed];
+    delta_loss = [delta_loss; abs(train_losses(end) - test_losses(end))];
+    recalls = [recalls; test_recall(end)];
+    precisions = [precisions; test_precision(end)];
+    f1s = [f1s; 2*(test_precision(end)*test_recall(end))/(test_precision(end)+test_recall(end))];
 
     % Plot train and test precision/recall
-    figure(fig1)
-    hold on
-    plot(1:1:epochs_elapsed, train_losses)
-    plot(1:1:epochs_elapsed, test_losses)
-    title(compose('Train and Test Losses, Grid Search Test %d', file_idx))
-
-    legend('Train loss', 'Test loss')
-    xlabel('# of epochs')
-    ylabel('Loss')
-    hold off
-
-    figure(fig2)
-    hold on
-    plot(1:1:epochs_elapsed, train_recall)
-    plot(1:1:epochs_elapsed, test_recall)
-    title(compose('Train and Test Recall, Grid Search Test %d', file_idx))
-    legend('Train recall', 'Test recall')
-    xlabel('# of epochs')
-    ylabel('Recall [%]')
-    [minA,maxA] = bounds(train_recall);
-    ylim([minA-0.05 1])
-    % xlim([0 30])
-    hold off
-
-    figure(fig3)
-    hold on
-    plot(1:1:epochs_elapsed, train_precision)
-    plot(1:1:epochs_elapsed, test_precision)
-    title(compose('Train and Test Precision, Grid Search Test %d', file_idx))
-    legend('Train precision', 'Test precision')
-
-    xlabel('# of epochs')
-    ylabel('Precision [%]')
-    [minA,maxA] = bounds(train_precision);
-    ylim([minA-0.05 1])
-    % xlim([0 30])
-    hold off
-    drawnow
-    str1 = string(compose('figures_grid_search/loss_%d.pdf', file_idx));
-    str2 = string(compose('figures_grid_search/recall_%d.pdf', file_idx));
-    str3 = string(compose('figures_grid_search/precision_%d.pdf', file_idx));
-
-    exportgraphics(figure(fig1), str1, 'BackgroundColor', 'none')
-    exportgraphics(figure(fig2), str2, 'BackgroundColor', 'none')
-    exportgraphics(figure(fig3), str3, 'BackgroundColor', 'none')
-    close all
+    % figure(fig1)
+    % hold on
+    % plot(1:1:epochs_elapsed, train_losses)
+    % plot(1:1:epochs_elapsed, test_losses)
+    % title(compose('Train and Test Losses, Grid Search Test %d', file_idx))
+    % 
+    % legend('Train loss', 'Test loss')
+    % xlabel('# of epochs')
+    % ylabel('Loss')
+    % hold off
+    % 
+    % figure(fig2)
+    % hold on
+    % plot(1:1:epochs_elapsed, train_recall)
+    % plot(1:1:epochs_elapsed, test_recall)
+    % title(compose('Train and Test Recall, Grid Search Test %d', file_idx))
+    % legend('Train recall', 'Test recall')
+    % xlabel('# of epochs')
+    % ylabel('Recall [%]')
+    % [minA,maxA] = bounds(train_recall);
+    % ylim([minA-0.05 1])
+    % % xlim([0 30])
+    % hold off
+    % 
+    % figure(fig3)
+    % hold on
+    % plot(1:1:epochs_elapsed, train_precision)
+    % plot(1:1:epochs_elapsed, test_precision)
+    % title(compose('Train and Test Precision, Grid Search Test %d', file_idx))
+    % legend('Train precision', 'Test precision')
+    % 
+    % xlabel('# of epochs')
+    % ylabel('Precision [%]')
+    % [minA,maxA] = bounds(train_precision);
+    % ylim([minA-0.05 1])
+    % % xlim([0 30])
+    % hold off
+    % drawnow
+    % str1 = string(compose('figures_grid_search/loss_%d.pdf', file_idx));
+    % str2 = string(compose('figures_grid_search/recall_%d.pdf', file_idx));
+    % str3 = string(compose('figures_grid_search/precision_%d.pdf', file_idx));
+    % 
+    % exportgraphics(figure(fig1), str1, 'BackgroundColor', 'none')
+    % exportgraphics(figure(fig2), str2, 'BackgroundColor', 'none')
+    % exportgraphics(figure(fig3), str3, 'BackgroundColor', 'none')
+    % close all
 
 end
 total_epochs_elapsed
 
+max(recalls)
+max(precisions)
+max(f1s)
+min(delta_loss)
 
+% recalls
+% precisions
+% f1s
+% delta_loss
 
 
 
