@@ -8,13 +8,24 @@
 // Include RobWork headers
 #include <rw/core/Ptr.hpp>
 #include <rw/kinematics/State.hpp>
+#include <rw/kinematics/Kinematics.hpp>
 #include <rw/loaders/WorkCellLoader.hpp>
+#include <rw/loaders/path/PathLoader.hpp>
+#include <rw/geometry/PointCloud.hpp>
+#include <rw/math/RPY.hpp>
+#include <rw/pathplanning.hpp>
+#include <rw/math/Rotation3D.hpp>
+#include <rw/invkin.hpp>
+#include <rw/models/SerialDevice.hpp>
+#include <rw/proximity/CollisionDetector.hpp>
+#include <rw/proximity/CollisionStrategy.hpp>
 #include <rwlibs/simulation/GLFrameGrabber.hpp>
 #include <rwlibs/simulation/GLFrameGrabber25D.hpp>
 #include <rwlibs/simulation/SimulatedCamera.hpp>
 #include <rwlibs/simulation/SimulatedScanner25D.hpp>
+#include <rwlibs/proximitystrategies/ProximityStrategyYaobi.hpp>
 #include <rwslibs/rwstudioapp/RobWorkStudioApp.hpp>
-#include <rw/geometry/PointCloud.hpp>
+
 
 using namespace rw::core;
 using namespace rw::common;
@@ -55,6 +66,54 @@ using namespace rws;
     
 
 // }
+/**
+ * @brief Convert a cv::Mat to a rw::math::Transform3D<double>.
+ * @param cv_mat The cv::Mat to convert.
+ * @param transform The rw::math::Transform3D<double> to convert to.
+ * @return True if the conversion was successful, false otherwise.
+*/
+bool cvMat_2_robworkTransform(cv::Mat& cv_mat, rw::math::Transform3D<double>& transform)
+{
+    if (cv_mat.empty())
+        {
+            std::cout << "cv_mat is empty" << std::endl;
+            return false;
+        }
+    if (cv_mat.channels() != 1)
+    {
+        std::cout << "cv_mat is not a 1-channel image" << std::endl;
+        return false;
+    }
+    if (cv_mat.rows != 4 || cv_mat.cols != 4)
+    {
+        std::cout << "cv_mat is not a 4x4 matrix" << std::endl;
+        return false;
+    }
+
+    rw::math::Rotation3D<double> rot = rw::math::RPY<double>(0, 0, 0).toRotation3D();
+    rw::math::Vector3D<double> pos = rw::math::Vector3D<double>(0, 0, 0);
+    double cv_debug;
+
+    // std::cout << "cv_mat: \n" << cv_mat << std::endl;
+    for (int i = 0; i < cv_mat.rows; i++)
+    {
+        for (int j = 0; j < cv_mat.cols; j++)
+        {  
+            if (i < 3 && j < 3)
+            {
+                cv_debug = cv_mat.at<double>(i, j);
+                rot(i, j) = cv_debug;
+            }
+            else if (i < 3 && j == 3)
+            {
+                cv_debug = cv_mat.at<double>(i, j);
+                pos(i) = cv_debug;
+            }
+        }
+    }
+    transform = rw::math::Transform3D<double>(pos, rot);
+    return true;
+}
 
 int main()
 {
@@ -77,7 +136,10 @@ int main()
     if (!properties.has("Scanner25D"))
         RW_THROW ("Depth frame does not have a Scanner25D.");
 
-
+    const rw::models::SerialDevice::Ptr UR5 = wc->findDevice<rw::models::SerialDevice>("UR-6-85-5-A");
+    if (UR5 == nullptr)
+        RW_THROW ("UR5 not found.");
+        
     const std::string parameters = properties.get< std::string > ("Scanner25D");
     std::istringstream iss (parameters, std::istringstream::in);
     double fovy;
@@ -96,7 +158,7 @@ int main()
     // TODO: make a live cam thread that can be updated, by updating image with realsense camera
     // std::thread cam_thread(live_cam, std::ref(image), std::ref(cam_mtx));
 
-    bool a;
+    bool inference_sucess;
 
     RobWorkStudioApp app("");
     RWS_START (app)
@@ -104,7 +166,7 @@ int main()
         // Get RobWorkStudio instance
         RobWorkStudio* const rwstudio = app.getRobWorkStudio();
         rwstudio->postOpenWorkCell(wcFile);
-        TimerUtil::sleepMs(3000);
+        TimerUtil::sleepMs(1000);
 
         // Get the scene viewer
         const SceneViewer::Ptr gldrawer = rwstudio->getView()->getSceneViewer();
@@ -133,16 +195,16 @@ int main()
         // Get camera extrinsics from camera frame
         cv::Mat R = cv::Mat::zeros(3, 3, CV_64F);
         cv::Mat t = cv::Mat::zeros(3, 1, CV_64F);
-        auto transform = camFrame->getTransform(state);
+        auto camTransform = camFrame->getTransform(state);
         
         // Load R and t into cv::Mat
         for (int i = 0; i < 3; i++)
         {
             for (int j = 0; j < 3; j++)
             {
-                R.at<double>(i, j) = transform(i, j);
+                R.at<double>(i, j) = camTransform(i, j);
             }
-            t.at<double>(i, 0) = transform(i, 3);
+            t.at<double>(i, 0) = camTransform(i, 3);
         }
         
 
@@ -153,116 +215,195 @@ int main()
         Inference::change_image_color(image, cv::Vec3b({255, 255, 255}), cv::Vec3b({40,90,120}));
         Inference inf("../../../models/unet_resnet101_1_jit.pt");
         auto time_start = std::chrono::high_resolution_clock::now();
-        a = inf.predict(image, returned_image);
+        inference_sucess = inf.predict(image, returned_image);
         auto time_end = std::chrono::high_resolution_clock::now();
         cam_mtx.unlock();
         std::cout << "Time taken: " << std::chrono::duration_cast<std::chrono::milliseconds>(time_end - time_start).count() << " ms" << std::endl;
  
+        if (inference_sucess)
+        {
+            std::cout << "Success" << std::endl;
+            // cv::imshow("Returned image", returnedImage);
+            // cv::waitKey(0);
+        }
+        else
+            std::cout << "Failure" << std::endl;
         
+        // Get depth image and point cloud
+        PointCloudPtr pc; // This is actually not really used for anything atm. Dont think it is needed?
+        cv::Mat depth;
+        RealSense.acquireDepth(state, info);
+        RealSense.getPointCloudAndDepthImage(pc, depth);
+
+        // Create PredictionProcessor object
+        double depth_scale = 1e4;
+        PredictionProcessor processor(depth_scale);
+
+        // Set intrinsics and extrinsics
+        auto camera_intrinsics = open3d::camera::PinholeCameraIntrinsic(width, height, intrinsics.at<double>(0, 0), intrinsics.at<double>(1, 1), intrinsics.at<double>(0, 2), intrinsics.at<double>(1, 2));
+        auto camera_extrinsics = Eigen::Matrix4d::Identity();
+        processor.setIntrinsicsAndExtrinsics(camera_intrinsics, camera_extrinsics);
+        
+        // Set flip matrix to flip point cloud to correct orientation
+        Eigen::Matrix4d flip_mat;
+            flip_mat << 1, 0, 0, 0,
+                        0, -1, 0, 0,
+                        0, 0, -1, 0,
+                        0, 0, 0, 1;
+
+        processor.setFlipMatrix(flip_mat);
+
+        // Create point cloud from depth image
+        PointCloudPtr pc_new;
+        bool flip = true;
+        processor.createPCFromDepth(depth, pc_new, flip);
+
+        // Draw circle in middle of image
+        cv::Point center = cv::Point(400, 200);
+        cv::circle(image, center, 5, cv::Scalar(0, 0, 255), -1);
+
+        // Estimate normals for point cloud and normalize them
+        processor.estimateAllNormals(pc_new, 0.05, 30, true);
+
+        // Convert pixel to 3d point
+        cv::Point3d center_3d;
+        processor.pixel2cam(depth, center, center_3d);
+
+        // Find index of closest point in point cloud to 3d center point
+        int min_index = processor.findIndexOfClosestPoint(pc_new, center_3d, flip);
+
+        // Get normal and 3d point from closest point in point cloud 
+        auto point_3d = pc_new->points_[min_index];
+        auto normal = pc_new->normals_[min_index];
+
+
+        // Flip normal if it points away from camera
+        if (normal(2) < 0)
+            normal = -normal;
+
+        cv::Mat R_obj_cam;
+        processor.computeRotationMatrixFromNormal(normal, R_obj_cam);
+        // std::cout << "R_obj_cam: \n" << R_obj_cam << std::endl;
+        
+        // manual flipping for test
+        center_3d.x = -center_3d.x;
+        center_3d.z = -center_3d.z;
+
+        // Create transformation matrix of object in camera frame
+        cv::Mat T_obj_cam;
+        cv::hconcat(R_obj_cam, cv::Mat(center_3d), T_obj_cam);
+        cv::vconcat(T_obj_cam, cv::Mat::zeros(1, 4, CV_64F), T_obj_cam);
+        T_obj_cam.at<double>(3, 3) = 1;
+        std::cout << "T_obj_cam: \n" << T_obj_cam << std::endl;
+
+
+
+
+        // ------------------------------------------------------
+        // ------------- Visualization --------------------------
+        // ------------------------------------------------------
+        // Create normal vector line
+        double scale = 0.1;
+        auto line = open3d::geometry::LineSet();
+        line.points_.push_back(point_3d);
+        line.points_.push_back(point_3d + normal*scale);
+        line.lines_.push_back(Eigen::Vector2i(0, 1));
+        line.colors_.push_back(Eigen::Vector3d(1, 0, 0));
+        auto line_ptr = std::make_shared<open3d::geometry::LineSet>(line);
+
+        // Visualize image and point cloud
+        cv::imshow("Image", image);
+        cv::imshow("Depth", depth);
+        cv::imshow("Inference", returned_image);
+        open3d::visualization::VisualizerWithKeyCallback o3d_vis;
+        o3d_vis.CreateVisualizerWindow("PointCloud", width, height);
+        o3d_vis.AddGeometry(pc_new);
+        o3d_vis.AddGeometry(line_ptr);
+        o3d_vis.Run();
+
+
+        // transform from world to object
+        rw::math::Transform3D<> frameObjTCam;
+        cvMat_2_robworkTransform(T_obj_cam, frameObjTCam);
+        std::cout << "frameObjTCam: " << frameObjTCam << std::endl;
+        
+        /* Invert frameObjTCam */
+        // rw::math::Transform3D<> identity = rw::math::Transform3D<double>::identity();
+        // rw::math::Transform3D<> frameCamTObj;
+        // rw::math::Transform3D<double>::invMult(frameObjTCam, identity, frameCamTObj);
+
+        /* NOTE: it seems to do the same as above the the above is probably correct*/
+        // auto rotInverted = frameObjTCam.R().inverse();
+        // auto transInverted = rotInverted * -frameObjTCam.P();
+        // rw::math::Transform3D<> frameCamTObj = rw::math::Transform3D<double>(transInverted, rotInverted);
+
+        // lets pretend that obj->cam is actually cam->obj (if this does not work, use the above code)
+        rw::math::Transform3D<> frameCamTObj = frameObjTCam;
+        // Calculate world to object transformation
+        rw::math::Transform3D<> frameWorldTCam = camTransform;
+        rw::math::Transform3D<> frameWorldTObj = frameWorldTCam * frameCamTObj;
+
+        // find frame GraspTCP
+        rw::kinematics::Frame* frameTcp = wc->findFrame("GraspTCP");
+        rw::kinematics::Frame* frameRobotBase = wc->findFrame("UR-6-85-5-A.Base");
+        rw::kinematics::Frame* frameRobotTcp = wc->findFrame("UR-6-85-5-A.TCP");
+        
+        // Create inverse kinematics solver
+        rw::invkin::ClosedFormIKSolverUR::Ptr solver = rw::common::ownedPtr(new rw::invkin::ClosedFormIKSolverUR(UR5, state));
+        
+        // Create collision detector
+        rw::proximity::CollisionStrategy::Ptr strategy = rwlibs::proximitystrategies::ProximityStrategyYaobi::make();
+        rw::proximity::CollisionDetector::Ptr col = rw::common::ownedPtr(new rw::proximity::CollisionDetector(wc, strategy));
+        
+        // Find colision and make replay file
+        std::vector<rw::math::Q> collisionFreeSolution;
+        rw::trajectory::TimedStatePath collisionFree;
+        double timeColFree = 0.0;
+        auto state_copy = state.clone(); 
+
+        // Find known transforms
+        rw::math::Transform3D<> frameWorldTBase = rw::kinematics::Kinematics::worldTframe(frameRobotBase, state);
+        rw::math::Transform3D<> frameTcpTRobotTcp = rw::kinematics::Kinematics::frameTframe(frameTcp, frameRobotTcp, state);    
+        rw::math::Transform3D<> frameBaseTGoal = rw::math::Transform3Dd::invMult(frameWorldTBase, frameWorldTObj);
+
+        double angle_step = 0.1; // increment in roll angle
+
+        for (double roll_angle = -M_PI; roll_angle <= M_PI; roll_angle += angle_step)
+        {   
+            rw::math::Transform3D<> graspTcpTroll = rw::math::Transform3D<>(
+                rw::math::Vector3D<double>(0,0,0), 
+                rw::math::RPY<double>(roll_angle, 0, 0).toRotation3D()
+            );
+
+            rw::math::Transform3D<> targetAt = (frameBaseTGoal 
+                * graspTcpTroll // rotate TCP to find multiple solutions
+                * frameTcpTRobotTcp // offset TCP to be at UR5 TCP from tool TCP
+            );
+
+            std::vector<rw::math::Q> sub_solutions = solver->solve(targetAt, state);
+            for (auto q : sub_solutions)
+            {
+                UR5->setQ(q, state_copy);
+                if (!col->inCollision(state_copy))
+                {
+                    collisionFreeSolution.push_back(q);
+                    collisionFree.push_back(rw::trajectory::TimedState(timeColFree, state_copy));
+                    timeColFree += 0.1;
+                }
+            }
+        }
+        std::cout << "Number of collision free solutions: " << collisionFreeSolution.size() << std::endl;
+
+        // Create path player
+        rw::loaders::PathLoader::storeTimedStatePath(*wc, collisionFree, "../../Project_WorkCell/collision_free.rwplay");
+
         // Close camera, scanner and RobWorkStudio
         RealSense.close();
         app.close();
     }
     RWS_END()
 
-        if (a)
-        {
-            std::cout << "Success" << std::endl;
-            cv::imshow("Returned image", returned_image);
-            cv::waitKey(0);
-        }
-        else
-            std::cout << "Failure" << std::endl;
 
-        // bool sucess = inf.predict<3, uint8_t>(image, returned_image);
-        // PyEval_RestoreThread(pystate); // Restore the thread state
-        
-        // Get depth image and point cloud
-        // PointCloudPtr pc; // This is actually not really used for anything atm. Dont think it is needed?
-        // cv::Mat depth;
-        // RealSense.acquireDepth(state, info);
-        // RealSense.getPointCloudAndDepthImage(pc, depth);
-
-        // // Create PredictionProcessor object
-        // double depth_scale = 1e4;
-        // PredictionProcessor processor(depth_scale);
-
-        // // Set intrinsics and extrinsics
-        // auto camera_intrinsics = open3d::camera::PinholeCameraIntrinsic(width, height, intrinsics.at<double>(0, 0), intrinsics.at<double>(1, 1), intrinsics.at<double>(0, 2), intrinsics.at<double>(1, 2));
-        // auto camera_extrinsics = Eigen::Matrix4d::Identity();
-        // processor.setIntrinsicsAndExtrinsics(camera_intrinsics, camera_extrinsics);
-        
-        // // Set flip matrix to flip point cloud to correct orientation
-        // Eigen::Matrix4d flip_mat;
-        //     flip_mat << 1, 0, 0, 0,
-        //                 0, -1, 0, 0,
-        //                 0, 0, -1, 0,
-        //                 0, 0, 0, 1;
-
-        // processor.setFlipMatrix(flip_mat);
-
-        // // Create point cloud from depth image
-        // PointCloudPtr pc_new;
-        // bool flip = true;
-        // processor.createPCFromDepth(depth, pc_new, flip);
-
-        // // Draw circle in middle of image
-        // cv::Point center = cv::Point(400, 200);
-        // cv::circle(image, center, 5, cv::Scalar(0, 0, 255), -1);
-
-        // // Estimate normals for point cloud and normalize them
-        // processor.estimateAllNormals(pc_new, 0.05, 30, true);
-
-        // // Convert pixel to 3d point
-        // cv::Point3d center_3d;
-        // processor.pixel2cam(depth, center, center_3d);
-
-        // // Find index of closest point in point cloud to 3d center point
-        // int min_index = processor.findIndexOfClosestPoint(pc_new, center_3d, flip);
-
-        // // Get normal and 3d point from closest point in point cloud 
-        // auto point_3d = pc_new->points_[min_index];
-        // auto normal = pc_new->normals_[min_index];
-
-        // // Flip normal if it points away from camera
-        // if (normal(2) < 0)
-        //     normal = -normal;
-
-        // cv::Mat R_obj_cam;
-        // processor.computeRotationMatrixFromNormal(normal, R_obj_cam);
-        // std::cout << "R_obj_cam: \n" << R_obj_cam << std::endl;
-
-        // // Create transformation matrix of object in camera frame
-        // cv::Mat T_obj_cam;
-        // cv::hconcat(R_obj_cam, cv::Mat(center_3d), T_obj_cam);
-        // cv::vconcat(T_obj_cam, cv::Mat::zeros(1, 4, CV_64F), T_obj_cam);
-        // T_obj_cam.at<double>(3, 3) = 1;
-        // std::cout << "T_obj_cam: \n" << T_obj_cam << std::endl;
-
-
-
-
-        // // ------------------------------------------------------
-        // // ------------- Visualization --------------------------
-        // // ------------------------------------------------------
-        // // Create normal vector line
-        // double scale = 0.1;
-        // auto line = open3d::geometry::LineSet();
-        // line.points_.push_back(point_3d);
-        // line.points_.push_back(point_3d + normal*scale);
-        // line.lines_.push_back(Eigen::Vector2i(0, 1));
-        // line.colors_.push_back(Eigen::Vector3d(1, 0, 0));
-        // auto line_ptr = std::make_shared<open3d::geometry::LineSet>(line);
-
-        // // Visualize image and point cloud
-        // cv::imshow("Image", image);
-        // cv::imshow("Depth", depth);
-        // cv::imshow("Inference", returned_image);
-        // open3d::visualization::VisualizerWithKeyCallback o3d_vis;
-        // o3d_vis.CreateVisualizerWindow("PointCloud", width, height);
-        // o3d_vis.AddGeometry(pc_new);
-        // o3d_vis.AddGeometry(line_ptr);
-        // o3d_vis.Run();
 
 
 
