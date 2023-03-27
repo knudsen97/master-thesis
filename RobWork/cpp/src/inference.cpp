@@ -1,128 +1,83 @@
-#include "../inc/inference.h"
+#include "../inc/inference.hpp"
 
-
-int Inference::init_numpy()
+Inference::Inference()
 {
-
-    if(PyArray_API == NULL)
-        import_array(); 
-    return 0;
+    this->model_path = "../../models/first_model.pt";
+    // this->model = torch::jit::load(model_path);
 }
 
-PyObject* Inference::mat_to_pNpArray(cv::Mat& image)
+Inference::Inference(std::string model_path)
 {
-    npy_intp dims[3] = { image.rows, image.cols, image.channels() };
-    PyObject* pArray = PyArray_SimpleNew(3, dims, NPY_UINT8);
-    std::memcpy(PyArray_DATA((PyArrayObject*)pArray), image.data, image.total() * image.elemSize());
-
-    return pArray;
-}
-PyObject* Inference::mat_to_parray(cv::Mat& image)
-{
-    // npy_intp dims[3] = { image.rows, image.cols, image.channels() };
-    PyObject* pList = PyList_New(image.total() * image.channels());
-
-    for (size_t i = 0; i < image.total(); i++)
-    {
-        for (int c = 0; c < image.channels(); c++)
-        {
-            PyList_SetItem(pList, i * image.channels() + c, PyLong_FromLong(image.data[i * image.channels() + c]));
-        }
-    }
-
-    return pList;
-}
-
-Inference::Inference(std::string filepath, std::string inference_function, std::string load_function)
-{
-    PyGILState_Ensure ();
-    this->main_thread_state = PyThreadState_Get();
-    this->pThreadState = Py_NewInterpreter ();
-
-    PyThreadState_Swap (main_thread_state);
-    PyGILState_Release (PyGILState_STATE::PyGILState_UNLOCKED);
-
-    TEST_NP_TO_TENSOR("Start of constructor");
-
-    START_PYTHON_CODE
-    int check = init_numpy();
-        if (check != 0) {
-        std::cerr << "Error initializing numpy" << std::endl;
-    }
-    END_PYTHON_CODE
-
-    // find the subpath to file
-    int file_idx = filepath.find_last_of('/');
-    std::string sub_path = filepath.substr(0, file_idx);
-
-    // find where to insert subpath
-    std::string append_string = "sys.path.append(\"\")";
-    int path_insert_idx = append_string.find_last_of('\"');
-
-    // insert subpath
-    append_string.insert(path_insert_idx, sub_path);
-
-    // find filename without extension
-    std::string filename = filepath.substr(file_idx + 1);
-    int ext_idx = filename.find_last_of('.');
-    filename = filename.substr(0, ext_idx);
-
-    // add subpath to python path    
-    std::cout << "Appending Python path: " << sub_path << std::endl;
-    START_PYTHON_CODE
-    PyRun_SimpleString("import sys");
-    PyRun_SimpleString(append_string.c_str());
-    END_PYTHON_CODE
-
-    // load python file
-    std::cout << "Loading Python file: " << filename << std::endl;
-    START_PYTHON_CODE
-    this->pInfModule = PyImport_ImportModule(filename.c_str());
-    END_PYTHON_CODE
-    if (!this->pInfModule) {
-        std::cerr << "Error loading Python module" << std::endl;
-    }
-
-    /*get functions from python file*/
-    // load model function
-    START_PYTHON_CODE
-    this->pLoadFunc = PyObject_GetAttrString(this->pInfModule, load_function.c_str());
-    this->pInfFunc = PyObject_GetAttrString(this->pInfModule, inference_function.c_str());
-    END_PYTHON_CODE
-
-    if (!this->pLoadFunc || !PyCallable_Check(this->pLoadFunc)) {
-        std::cerr << "Error loading Python load function" << std::endl;
-    }
-
-    if (!this->pInfFunc || !PyCallable_Check(this->pInfFunc)) {
-        std::cerr << "Error loading Python inference function" << std::endl;
-    }
-
-    // get model
-    START_PYTHON_CODE
-    this->pModel = PyObject_CallObject(this->pLoadFunc, nullptr);
-    if (PyErr_Occurred()) {
-        std::cerr << "Error: Python function threw an error while loading model" << std::endl;
-        PyErr_PrintEx(0);
-        PyErr_Clear(); // this will reset the error indicator so you can run Python code again
-    }
-    END_PYTHON_CODE
-
-    TEST_NP_TO_TENSOR("End of constructor");
-    
+    this->model_path = model_path;
+    // this->model = torch::jit::load(model_path);
 }
 
 Inference::~Inference()
 {
-    Py_DECREF(this->pInfModule);
-    Py_DECREF(this->pInfFunc);
-    Py_DECREF(this->pLoadFunc);
-    Py_DECREF(this->pModel);
+}
 
-    if (this->pThreadState) {
-        PyThreadState* ts = PyThreadState_Swap (this->pThreadState);;
-        Py_EndInterpreter (this->pThreadState);
+bool Inference::predict(const cv::Mat input, cv::Mat& output)
+{
+    // cv::Mat input_image(480, 640, CV_8UC3, CV_RGB(255,255,255));
+    cv::imwrite("input.png", input);
+    std::string command;
+    command = "./inference " + this->model_path;
+    int a = system(command.c_str());
+    if (a != 0)
+    {
+        std::cerr << "Error: system call failed." << std::endl;
+        return false;
+    }
+    cv::Mat returned_image = cv::imread("output.png");
+    output = returned_image;
+    return true;
+}
 
-        PyThreadState_Swap(ts);
+
+bool Inference::normalize_image(cv::Mat& image, std::vector<float> mean, std::vector<float> std)
+{
+    if (image.empty())
+    {
+        std::cout << "Error: image is empty." << std::endl;
+        return false;
+    }
+    if (mean.size() != 3 || std.size() != 3)
+    {
+        std::cout << "Error: mean and std must be of size 3." << std::endl;
+        return false;
+    }
+    image = image - cv::Scalar(mean[0], mean[1], mean[2]);
+    image = image / cv::Scalar(std[0], std[1], std[2]);
+    return true;
+}
+
+bool Inference::denormalize_image(cv::Mat& image, std::vector<float> mean, std::vector<float> std)
+{
+    if (image.empty())
+    {
+        std::cout << "Error: image is empty." << std::endl;
+        return false;
+    }
+    if (mean.size() != 3 || std.size() != 3)
+    {
+        std::cout << "Error: mean and std must be of size 3." << std::endl;
+        return false;
+    }
+    image = image * cv::Scalar(std[0], std[1], std[2]);
+    image = image + cv::Scalar(mean[0], mean[1], mean[2]);
+    return true;
+}
+
+void Inference::change_image_color(cv::Mat& image, cv::Vec3b from_color, cv::Vec3b to_color)
+{
+    for (int i = 0; i < image.rows; i++)
+    {
+        for (int j = 0; j < image.cols; j++)
+        {
+            if (image.at<cv::Vec3b>(i, j) == from_color)
+            {
+                image.at<cv::Vec3b>(i, j) = to_color;
+            }
+        }
     }
 }

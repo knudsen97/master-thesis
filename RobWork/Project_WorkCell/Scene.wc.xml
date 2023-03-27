@@ -28,9 +28,12 @@
 			<Polytope file="suctionGripper/ToolUnit" />
 		</Drawable>
 	</Frame>
-	<Frame name="TCP" refframe="Tool">
-		<RPY>0 0 0</RPY> <Pos>0 0 0.072</Pos>
-	</Frame>
+
+	<Frame name="GraspTCP" refframe="UR-6-85-5-A.TCP" type="Fixed">
+		<RPY>0 0 135</RPY> 
+		<Pos> 0.0 0.135 0.292 </Pos>
+		<!-- x z y  -->
+	</Frame> 
 	
 <!-- Cameras -->
 <!-- 
@@ -62,7 +65,7 @@
 <Frame name="Container" refframe="Table" type="Fixed">
 	<RPY>90 0 0</RPY> <Pos>0.3 0.15 0.12</Pos>		
 	<Drawable name="Container" refframe="Container">
-		<RGB>0 0.2 0.5</RGB>
+		<RGB> 0 0 0.3 </RGB>
 		<Polytope file="container/container" />
 	</Drawable>
 </Frame>
