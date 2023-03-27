@@ -2,7 +2,7 @@ clc;clear;close all;
 
 % Import data folder results
 %Get information about what's inside your folder.
-myfiles = dir('results/');
+myfiles = dir('results_grid_search/');
 %Get the filenames and folders of all files and folders inside the folder
 %of your choice.
 filenames={myfiles(:).name}';
@@ -15,74 +15,99 @@ csvfolders=filefolders(endsWith(filenames,'.csv'));
 %files.
 files=fullfile(csvfolders,csvfiles);
 
-filename = string(files(2))
+% Skip first file (grid_search_results.csv)
+files=files(2:end);
 
-% Open CSV file and convert to array
-T = readtable(filename, 'NumHeaderLines', 0);
-A = table2array(T);
-
-% Read first 2 lines which is hyperparameters
-% epochs, encoder_depth, lr, batch_size, l2_penalization
-hyperparameters = A(1,1:end-1)
-epochs = hyperparameters(1);
-encoder_depth = hyperparameters(2);
-lr = hyperparameters(3);
-batch_size = hyperparameters(4);
-l2_penalization = hyperparameters(5); % Weight decay
-A = A(3:end,:);
+total_epochs_elapsed = [];
+% length(files)
 
 
-% CSV file is structured like: 
-%[train_losses, test_losses, train_recall, train_precision, test_recall, teste_precision]
-train_losses    = A(:,1);
-test_losses     = A(:,2);
-train_recall    = A(:,3);
-train_precision = A(:,4);
-test_recall     = A(:,5);
-test_precision  = A(:,6);
+for file_idx = 1:length(files)
+    fig1 = ((file_idx-1)*3+1);
+    fig2 = ((file_idx-1)*3+2);
+    fig3 = ((file_idx-1)*3+3);
 
-% Plot train and test precision/recall
-figure(1)
-hold on
-plot(1:1:epochs, train_losses)
-plot(1:1:epochs, test_losses)
-title('Train and test losses for baseline model with regularzation')
-legend('Train loss', 'Test loss')
-xlabel('# of epochs')
-ylabel('Loss')
-hold off
+    filename = string(files(file_idx));
 
-figure(2)
-hold on
-plot(1:1:epochs, train_recall)
-plot(1:1:epochs, test_recall)
-title('Train and test recall for baseline model with regularzation')
-legend('Train recall', 'Test recall')
-xlabel('# of epochs')
-ylabel('Recall [%]')
-[minA,maxA] = bounds(train_recall);
-ylim([minA-0.05 1])
-xlim([0 100])
-hold off
+    % Open CSV file and convert to array
+    T = readtable(filename, 'NumHeaderLines', 0);
+    A = table2array(T);
 
-figure(3)
-hold on
-plot(1:1:epochs, train_precision)
-plot(1:1:epochs, test_precision)
-title('Train and test precision for baseline model with regularzation')
-legend('Train precision', 'Test precision')
-
-xlabel('# of epochs')
-ylabel('Precision [%]')
-[minA,maxA] = bounds(train_precision);
-ylim([minA-0.05 1])
-xlim([0 100])
-hold off
+    % Read first 2 lines which is hyperparameters
+    % epochs, encoder_depth, lr, batch_size, l2_penalization
+    hyperparameters = A(1,1:end-1);
+    epochs = hyperparameters(1);
+    encoder_depth = hyperparameters(2);
+    lr = hyperparameters(3);
+    batch_size = hyperparameters(4);
+    l2_penalization = hyperparameters(5); % Weight decay
+    A = A(3:end,:);
 
 
-exportgraphics(figure(1), 'figures/loss_1.pdf', 'BackgroundColor', 'none')
-exportgraphics(figure(2), 'figures/recall_1.pdf', 'BackgroundColor', 'none')
-exportgraphics(figure(3), 'figures/precision_1.pdf', 'BackgroundColor', 'none')
+    % CSV file is structured like: 
+    %[train_losses, test_losses, train_recall, train_precision, test_recall, teste_precision]
+    train_losses    = A(:,1);
+    test_losses     = A(:,2);
+    train_recall    = A(:,3);
+    train_precision = A(:,4);
+    test_recall     = A(:,5);
+    test_precision  = A(:,6);
+    epochs_elapsed = length(train_losses);
+    total_epochs_elapsed = [total_epochs_elapsed, epochs_elapsed];
+
+    % Plot train and test precision/recall
+    figure(fig1)
+    hold on
+    plot(1:1:epochs_elapsed, train_losses)
+    plot(1:1:epochs_elapsed, test_losses)
+    title(compose('Train and Test Losses, Grid Search Test %d', file_idx))
+
+    legend('Train loss', 'Test loss')
+    xlabel('# of epochs')
+    ylabel('Loss')
+    hold off
+
+    figure(fig2)
+    hold on
+    plot(1:1:epochs_elapsed, train_recall)
+    plot(1:1:epochs_elapsed, test_recall)
+    title(compose('Train and Test Recall, Grid Search Test %d', file_idx))
+    legend('Train recall', 'Test recall')
+    xlabel('# of epochs')
+    ylabel('Recall [%]')
+    [minA,maxA] = bounds(train_recall);
+    ylim([minA-0.05 1])
+    % xlim([0 30])
+    hold off
+
+    figure(fig3)
+    hold on
+    plot(1:1:epochs_elapsed, train_precision)
+    plot(1:1:epochs_elapsed, test_precision)
+    title(compose('Train and Test Precision, Grid Search Test %d', file_idx))
+    legend('Train precision', 'Test precision')
+
+    xlabel('# of epochs')
+    ylabel('Precision [%]')
+    [minA,maxA] = bounds(train_precision);
+    ylim([minA-0.05 1])
+    % xlim([0 30])
+    hold off
+    drawnow
+    str1 = string(compose('figures_grid_search/loss_%d.pdf', file_idx));
+    str2 = string(compose('figures_grid_search/recall_%d.pdf', file_idx));
+    str3 = string(compose('figures_grid_search/precision_%d.pdf', file_idx));
+
+    exportgraphics(figure(fig1), str1, 'BackgroundColor', 'none')
+    exportgraphics(figure(fig2), str2, 'BackgroundColor', 'none')
+    exportgraphics(figure(fig3), str3, 'BackgroundColor', 'none')
+    close all
+
+end
+total_epochs_elapsed
+
+
+
 
 
 
