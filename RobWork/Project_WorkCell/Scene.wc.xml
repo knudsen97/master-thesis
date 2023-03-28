@@ -30,6 +30,12 @@
 			<Polytope file="suctionGripper/ToolUnit" />
 		</Drawable>
 	</Frame>
+
+	<Frame name="GraspTCP" refframe="UR-6-85-5-A.TCP" type="Fixed">
+		<RPY>0 0 135</RPY> 
+		<Pos> 0.0 0.135 0.292 </Pos>
+		<!-- x z y  -->
+	</Frame> 
 	
 <!-- Cameras -->
 <!-- 
