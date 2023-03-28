@@ -1,4 +1,4 @@
-#include "../inc/inference.hpp"
+#include "../inc/Inference.hpp"
 
 Inference::Inference()
 {

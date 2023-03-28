@@ -49,7 +49,7 @@ using namespace rws;
 // Include "inc" headers
 #include "../inc/Sensor.hpp"
 #include "../inc/PredictionProcessor.hpp"
-#include "../inc/inference.hpp"
+#include "../inc/Inference.hpp"
 
 // void live_cam(cv::Mat& image, std::mutex& cam_mtx)
 // {
