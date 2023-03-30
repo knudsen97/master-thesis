@@ -12,6 +12,7 @@
 #include <rw/loaders/WorkCellLoader.hpp>
 #include <rw/loaders/path/PathLoader.hpp>
 #include <rw/geometry/PointCloud.hpp>
+
 #include <rw/math/RPY.hpp>
 #include <rw/pathplanning.hpp>
 #include <rw/math/Rotation3D.hpp>
@@ -19,6 +20,7 @@
 #include <rw/models/SerialDevice.hpp>
 #include <rw/proximity/CollisionDetector.hpp>
 #include <rw/proximity/CollisionStrategy.hpp>
+
 #include <rwlibs/simulation/GLFrameGrabber.hpp>
 #include <rwlibs/simulation/GLFrameGrabber25D.hpp>
 #include <rwlibs/simulation/SimulatedCamera.hpp>
@@ -26,6 +28,10 @@
 #include <rwlibs/proximitystrategies/ProximityStrategyYaobi.hpp>
 #include <rwslibs/rwstudioapp/RobWorkStudioApp.hpp>
 
+#include <rw/math/MetricFactory.hpp>
+#include <rwlibs/pathplanners/rrt/RRTPlanner.hpp>
+#include <rw/pathplanning/PlannerConstraint.hpp>
+#include <rw/trajectory.hpp>
 
 using namespace rw::core;
 using namespace rw::common;
@@ -50,6 +56,7 @@ using namespace rws;
 #include "../inc/Sensor.hpp"
 #include "../inc/PredictionProcessor.hpp"
 #include "../inc/Inference.hpp"
+#include "../inc/InverseKinematics.hpp"
 
 // void live_cam(cv::Mat& image, std::mutex& cam_mtx)
 // {
@@ -222,12 +229,12 @@ int main()
  
         if (inference_sucess)
         {
-            std::cout << "Success" << std::endl;
+            std::cout << "Inference success" << std::endl;
             // cv::imshow("Returned image", returnedImage);
             // cv::waitKey(0);
         }
         else
-            std::cout << "Failure" << std::endl;
+            std::cout << "Inference failure" << std::endl;
         
         // Get depth image and point cloud
         PointCloudPtr pc; // This is actually not really used for anything atm. Dont think it is needed?
@@ -325,7 +332,6 @@ int main()
         // transform from world to object
         rw::math::Transform3D<> frameObjTCam;
         cvMat_2_robworkTransform(T_obj_cam, frameObjTCam);
-        std::cout << "frameObjTCam: " << frameObjTCam << std::endl;
         
         /* Invert frameObjTCam */
         // rw::math::Transform3D<> identity = rw::math::Transform3D<double>::identity();
@@ -343,59 +349,76 @@ int main()
         rw::math::Transform3D<> frameWorldTCam = camTransform;
         rw::math::Transform3D<> frameWorldTObj = frameWorldTCam * frameCamTObj;
 
-        // find frame GraspTCP
-        rw::kinematics::Frame* frameTcp = wc->findFrame("GraspTCP");
-        rw::kinematics::Frame* frameRobotBase = wc->findFrame("UR-6-85-5-A.Base");
-        rw::kinematics::Frame* frameRobotTcp = wc->findFrame("UR-6-85-5-A.TCP");
-        
-        // Create inverse kinematics solver
-        rw::invkin::ClosedFormIKSolverUR::Ptr solver = rw::common::ownedPtr(new rw::invkin::ClosedFormIKSolverUR(UR5, state));
-        
-        // Create collision detector
-        rw::proximity::CollisionStrategy::Ptr strategy = rwlibs::proximitystrategies::ProximityStrategyYaobi::make();
-        rw::proximity::CollisionDetector::Ptr col = rw::common::ownedPtr(new rw::proximity::CollisionDetector(wc, strategy));
-        
-        // Find colision and make replay file
-        std::vector<rw::math::Q> collisionFreeSolution;
-        rw::trajectory::TimedStatePath collisionFree;
-        double timeColFree = 0.0;
-        auto state_copy = state.clone(); 
+        InverseKinematics solver(UR5, wc);
+        // double angle_step = 0.1; // increment in roll angle
+        // double start = -M_PI;
+        // double end = M_PI;
+        solver.solve(frameWorldTObj, M_PI/2);
+        std::vector<rw::math::Q> collisionFreeSolution = solver.getSolutions();
+        auto collisionFree = solver.getReplay();
 
-        // Find known transforms
-        rw::math::Transform3D<> frameWorldTBase = rw::kinematics::Kinematics::worldTframe(frameRobotBase, state);
-        rw::math::Transform3D<> frameTcpTRobotTcp = rw::kinematics::Kinematics::frameTframe(frameTcp, frameRobotTcp, state);    
-        rw::math::Transform3D<> frameBaseTGoal = rw::math::Transform3Dd::invMult(frameWorldTBase, frameWorldTObj);
-
-        double angle_step = 0.1; // increment in roll angle
-
-        for (double roll_angle = -M_PI; roll_angle <= M_PI; roll_angle += angle_step)
-        {   
-            rw::math::Transform3D<> graspTcpTroll = rw::math::Transform3D<>(
-                rw::math::Vector3D<double>(0,0,0), 
-                rw::math::RPY<double>(roll_angle, 0, 0).toRotation3D()
-            );
-
-            rw::math::Transform3D<> targetAt = (frameBaseTGoal 
-                * graspTcpTroll // rotate TCP to find multiple solutions
-                * frameTcpTRobotTcp // offset TCP to be at UR5 TCP from tool TCP
-            );
-
-            std::vector<rw::math::Q> sub_solutions = solver->solve(targetAt, state);
-            for (auto q : sub_solutions)
-            {
-                UR5->setQ(q, state_copy);
-                if (!col->inCollision(state_copy))
-                {
-                    collisionFreeSolution.push_back(q);
-                    collisionFree.push_back(rw::trajectory::TimedState(timeColFree, state_copy));
-                    timeColFree += 0.1;
-                }
-            }
-        }
         std::cout << "Number of collision free solutions: " << collisionFreeSolution.size() << std::endl;
 
         // Create path player
         rw::loaders::PathLoader::storeTimedStatePath(*wc, collisionFree, "../../Project_WorkCell/collision_free.rwplay");
+
+        rw::math::Q Qgoal = collisionFreeSolution[0];
+        rw::math::Q Qstart = UR5->getQ(state);
+
+        // Create collision detector
+        rw::proximity::CollisionStrategy::Ptr collisionStrategy = rwlibs::proximitystrategies::ProximityStrategyYaobi::make();
+        rw::proximity::CollisionDetector::Ptr collisionDetector = rw::common::ownedPtr(new rw::proximity::CollisionDetector(wc, collisionStrategy));
+
+        // Initialize planner
+        rw::pathplanning::QConstraint::Ptr Qconstraint = rw::pathplanning::QConstraint::make(collisionDetector, UR5, wc->getDefaultState());
+        rw::pathplanning::PlannerConstraint plannerConstraint = rw::pathplanning::PlannerConstraint::make(collisionDetector, UR5, state);
+        rw::pathplanning::QSampler::QSampler::Ptr sampler = rw::pathplanning::QSampler::QSampler::makeConstrained(
+            rw::pathplanning::QSampler::QSampler::makeUniform(UR5), plannerConstraint.getQConstraintPtr()
+        );
+        rw::math::QMetric::Ptr metric = rw::math::MetricFactory::makeEuclidean<rw::math::Q>();
+        rw::pathplanning::QEdgeConstraint::Ptr edgeContrain = rw::pathplanning::QEdgeConstraint::make(Qconstraint.get(), metric, 0.1);
+        double step_size = 0.1;
+        rw::pathplanning::QToQPlanner::Ptr planner = rwlibs::pathplanners::RRTPlanner::makeQToQPlanner(
+            plannerConstraint, 
+            sampler, 
+            metric, 
+            step_size, 
+            rwlibs::pathplanners::RRTPlanner::RRTConnect
+        );
+        
+        // get path from Qstart to Qgoal
+        rw::trajectory::QPath path;
+        rw::trajectory::QPath linIntPath;
+        bool pathFound = planner->query(Qstart, Qgoal, path);
+        if (pathFound) {
+            std::cout << "Path found!" << std::endl;
+            std::cout << "Path length: " << path.size() << std::endl;
+        } else {
+            std::cout << "Path not found!" << std::endl;
+        }
+
+        double time_step = 0.1;
+        double linIntTimeStep = 1;
+        for(unsigned int i = 0; i < path.size()-1; i++)
+        {
+            rw::trajectory::LinearInterpolator<rw::math::Q> LinInt(path[i], path[i+1], linIntTimeStep);
+            for(double dt = 0.0; dt < linIntTimeStep; dt += time_step)
+            {
+                linIntPath.push_back(LinInt.x(dt));
+            }
+        }
+
+        // Create path player
+        auto stateCopy = wc->getDefaultState();
+        double time = 0;
+        rw::trajectory::TimedStatePath replayPath;
+        for (auto q : linIntPath) {
+            UR5->setQ(q, stateCopy);
+            replayPath.push_back(rw::trajectory::TimedState(time, stateCopy));
+            time += time_step;
+        }
+        rw::loaders::PathLoader::storeTimedStatePath(*wc, replayPath, "../../Project_WorkCell/RRTPath.rwplay");
+        
 
         // Close camera, scanner and RobWorkStudio
         RealSense.close();
@@ -403,14 +426,6 @@ int main()
     }
     RWS_END()
 
-
-
-
-
-
-
-    // std::cout << "Press any key to exit" << std::endl;
-    // cv::waitKey(0);
     std::cout << "Done!" << std::endl;
 
 
