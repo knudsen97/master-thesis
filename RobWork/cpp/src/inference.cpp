@@ -21,7 +21,7 @@ bool Inference::predict(const cv::Mat input, cv::Mat& output)
     // cv::Mat input_image(480, 640, CV_8UC3, CV_RGB(255,255,255));
     cv::imwrite("input.png", input);
     std::string command;
-    command = "./inference " + this->model_path;
+    command = "../bin/inference " + this->model_path;
     int a = system(command.c_str());
     if (a != 0)
     {

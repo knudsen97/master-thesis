@@ -7,7 +7,7 @@ if [[ ${USER} == "claus" ]]; then
 
     /usr/bin/cmake --build /home/claus/Documents/sdu/9sem/master/code/master-thesis/RobWork/cpp/inference_bin_generator/build --config Debug --target all --
 
-    cp /home/claus/Documents/sdu/9sem/master/code/master-thesis/RobWork/cpp/inference_bin_generator/build/inference /home/claus/Documents/sdu/9sem/master/code/master-thesis/RobWork/cpp/build
+    cp /home/claus/Documents/sdu/9sem/master/code/master-thesis/RobWork/cpp/inference_bin_generator/build/inference /home/claus/Documents/sdu/9sem/master/code/master-thesis/RobWork/cpp/bin
 fi
 
 if [[ ${USER} == "kristian" ]]; then
@@ -19,5 +19,5 @@ if [[ ${USER} == "kristian" ]]; then
 
     /usr/bin/cmake --build /home/kristian/Documents/SDU/master-thesis/RobWork/cpp/inference_bin_generator/build --config Debug --target all --
 
-    cp /home/kristian/Documents/SDU/master-thesis/RobWork/cpp/inference_bin_generator/build/inference /home/kristian/Documents/SDU/master-thesis/RobWork/cpp/build
+    cp /home/kristian/Documents/SDU/master-thesis/RobWork/cpp/inference_bin_generator/build/inference /home/kristian/Documents/SDU/master-thesis/RobWork/cpp/bin
 fi
