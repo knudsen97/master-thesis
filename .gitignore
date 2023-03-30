@@ -1,6 +1,21 @@
 # Other cutsom things 
-.vscode/*
-*/.vscode/*
+*.vscode/
+*.pth
+*images/
+*image/
+*depth/
+*labels/
+*label/
+*depth-input/
+*color-input/
+
+# Ignore dataset
+_data*
+_data*/
+*data*/
+
+# Ignore hidden folders
+_*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
