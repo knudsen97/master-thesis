@@ -104,6 +104,52 @@ void PredictionProcessor::computeRotationMatrixFromNormal(const Eigen::Vector3d 
     }
 }
 
+void PredictionProcessor::computeCenters(const cv::Mat &image, std::vector<cv::Point2i> &dest)
+{
+    // // Convert image to HSV because it is easier to filter colors in the HSV color-space.
+    // cv::Mat hsv;
+    // cv::cvtColor(image, hsv, cv::COLOR_BGR2HSV);
+
+    // // Filter out green pixels
+    // cv::Mat greenOnly;
+    // cv::inRange(hsv, this->_lowerBound, this->_upperBound, greenOnly);
+    
+    /* isolate green channel */ 
+    cv::Mat bgr[3];
+    cv::split(image, bgr);
+    cv::Mat greenOnly = bgr[1];
+
+    cv::Mat labels, stats, centroids;
+    int nLabels = cv::connectedComponentsWithStats(greenOnly, labels, stats, centroids);
+
+    // Sort centroids by size
+    std::vector<std::pair<int, cv::Point2i>> sizeCentroids; // (size, centroid)
+    for (int i = 0; i < stats.rows; i++)
+    {
+        int size = stats.at<int>(i, cv::CC_STAT_AREA);
+        cv::Point2i centroidInt = cv::Point2i(centroids.at<double>(i, 0), centroids.at<double>(i, 1));
+        sizeCentroids.push_back(std::make_pair(size, centroidInt));
+        std::cout << "(size, centroid): (" << size << ", " << centroidInt << ")" << std::endl;
+    }
+    std::sort(sizeCentroids.begin(), sizeCentroids.end(), [](const std::pair<int, cv::Point2i> &a, const std::pair<int, cv::Point2i> &b) {
+        return a.first > b.first;
+    });
+
+    // Extract centroids from sizeCentroids into a vector
+    dest.resize(sizeCentroids.size());
+    for (int i = 0; i < dest.size(); i++)
+    {
+        dest[i] = sizeCentroids[i].second;
+        // std::cout << "sorted: " << sizeCentroids[i].second << std::endl;
+    }
+}
+
+
+void PredictionProcessor::setBounds(cv::Scalar lower, cv::Scalar upper)
+{
+    this->_lowerBound = lower;
+    this->_upperBound = upper;
+}
 
 
 // ------------------- Private Methods -------------------

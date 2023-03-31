@@ -267,7 +267,13 @@ int main()
 
         // Draw circle in middle of image
         cv::Point center = cv::Point(400, 200);
+        std::vector<cv::Point> centers;
+        processor.computeCenters(returned_image, centers);
+        center = centers[1];
+        for (auto c : centers)
+            std::cout << "center: " << c << std::endl;
         cv::circle(image, center, 5, cv::Scalar(0, 0, 255), -1);
+        cv::circle(returned_image, center, 5, cv::Scalar(0, 0, 0), -1);
 
         // Estimate normals for point cloud and normalize them
         processor.estimateAllNormals(pc_new, 0.05, 30, true);
