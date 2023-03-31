@@ -54,6 +54,12 @@ public:
     */
     static bool denormalize_image(cv::Mat& image, std::vector<float> mean, std::vector<float> std);
 
+    /**
+     * @brief Change a specific color in an image to another color.
+     * @param image The input image.
+     * @param from_color The color to change.
+     * @param to_color The color to change to.
+    */
     static void change_image_color(cv::Mat& image, cv::Vec3b from_color, cv::Vec3b to_color);
 
 private:
