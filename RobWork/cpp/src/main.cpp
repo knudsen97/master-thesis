@@ -368,8 +368,21 @@ int main()
         // Create path player
         rw::loaders::PathLoader::storeTimedStatePath(*wc, collisionFree, "../../Project_WorkCell/collision_free.rwplay");
 
-        rw::math::Q Qgoal = collisionFreeSolution[0];
         rw::math::Q Qstart = UR5->getQ(state);
+
+        rw::math::QMetric::Ptr metric = rw::math::MetricFactory::makeEuclidean<rw::math::Q>();
+        rw::math::Q Qgoal = collisionFreeSolution[0];
+        double distance = metric->distance(Qstart, Qgoal);
+        double calculatedDistance = 0;
+        for (auto q : collisionFreeSolution)
+        {
+            calculatedDistance = metric->distance(Qstart, q);
+            if (calculatedDistance > distance)
+            {
+                distance = calculatedDistance;
+                Qgoal = q;
+            }
+        }
 
         // Create collision detector
         rw::proximity::CollisionStrategy::Ptr collisionStrategy = rwlibs::proximitystrategies::ProximityStrategyYaobi::make();
@@ -381,7 +394,6 @@ int main()
         rw::pathplanning::QSampler::QSampler::Ptr sampler = rw::pathplanning::QSampler::QSampler::makeConstrained(
             rw::pathplanning::QSampler::QSampler::makeUniform(UR5), plannerConstraint.getQConstraintPtr()
         );
-        rw::math::QMetric::Ptr metric = rw::math::MetricFactory::makeEuclidean<rw::math::Q>();
         rw::pathplanning::QEdgeConstraint::Ptr edgeContrain = rw::pathplanning::QEdgeConstraint::make(Qconstraint.get(), metric, 0.1);
         double step_size = 0.1;
         rw::pathplanning::QToQPlanner::Ptr planner = rwlibs::pathplanners::RRTPlanner::makeQToQPlanner(
