@@ -113,7 +113,7 @@ def main():
 
     # Reset scene
     # bpy.context.scene.rigidbody_world.enabled = False
-    rng = np.random.randint(0, 50, 1).item() # Random number between 0 and 5*5*4
+    rng = np.random.randint(1, 50, 1).item() # Random number between 0 and 5*5*4
     try:
         delete_all_boxes()
     except NameError:

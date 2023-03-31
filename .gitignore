@@ -1,5 +1,7 @@
 # Other cutsom things 
 *.vscode/
+.vscode/*
+*/.vscode/*
 *.pth
 *images/
 *image/
