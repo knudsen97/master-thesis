@@ -192,7 +192,7 @@ def arg_parser():
     decoder_use_batchnorm = False
     decoder_attention_type = None
     optimizer_type_default = "Adam"
-    id_default = 0
+    id_default = '0'
 
     # Parse command-line arguments
     parser = argparse.ArgumentParser()
@@ -204,7 +204,7 @@ def arg_parser():
     parser.add_argument('-decoder_use_batchnorm', type=bool, default=decoder_use_batchnorm, help='Use batchnorm in decoder')
     parser.add_argument('-decoder_attention_type', type=str, default=decoder_attention_type, help='Attention type in decoder')
     parser.add_argument('-optimizer', type=str, default=optimizer_type_default, help='Type of optimizer: Adam, Adamax')
-    parser.add_argument('-id', type=int, default=id_default, help='id used for saving the results')
+    parser.add_argument('-id', type=str, default=id_default, help='id used for saving the results')
 
 
     return parser.parse_args()
@@ -365,7 +365,7 @@ def main():
 
 
     # Define the file path and open the CSV file in append mode and save the results in results folder
-    csv_file_path = f'results/results{args.id}.csv'
+    csv_file_path = f'results/results_{args.id}.csv'
     with open(csv_file_path, 'w', newline='') as csv_file:
         writer = csv.writer(csv_file)
 
