@@ -15,7 +15,7 @@ import argparse
 
 # Create custom dataset class
 class SegNetDataset(Dataset):
-    def __init__(self, data_dir, synthetic, transform=None, synthetic_data_count = 1000):#, transform_augmentations=None):
+    def __init__(self, data_dir, synthetic, transform=None, synthetic_data_count=1000):#, transform_augmentations=None):
         self.synthetic = synthetic
         self.data_dir = data_dir
         self.synthetic_data_count = synthetic_data_count
@@ -193,6 +193,7 @@ def arg_parser():
     decoder_attention_type = None
     optimizer_type_default = "Adam"
     id_default = '0'
+    synthetic_data_count_default = 1000
 
     # Parse command-line arguments
     parser = argparse.ArgumentParser()
@@ -200,6 +201,7 @@ def arg_parser():
     parser.add_argument('-encoder_depth', type=int, default=encoder_depth_default, help='Depth of encoder')
     parser.add_argument('-lr', type=float, default=lr_default, help='Learning rate')
     parser.add_argument('-batch_size', type=int, default=batch_size_default, help='Batch size')
+    parser.add_argument('-synthetic_data_count', type=int, default=synthetic_data_count_default, help='Number of synthetic data samples to use')
     parser.add_argument('-l2', type=float, default=l2_penalization_default, help='L2 penalization (weight decay)')
     parser.add_argument('-decoder_use_batchnorm', type=bool, default=decoder_use_batchnorm, help='Use batchnorm in decoder')
     parser.add_argument('-decoder_attention_type', type=str, default=decoder_attention_type, help='Attention type in decoder')
@@ -300,8 +302,9 @@ def main():
     # Create dataset
     data_dir = 'data'
     data_syn_dir = 'data_synthetic'
-    dataset_real = SegNetDataset(data_dir=data_dir, synthetic=False, transform=transforms)#, transform_augmentations=transform_augmentations)
-    dataset_syn = SegNetDataset(data_dir=data_syn_dir, synthetic=True, transform=transforms)#, transform_augmentations=transform_augmentations)
+    synthetic_data_count = args.synthetic_data_count
+    dataset_real = SegNetDataset(data_dir=data_dir, synthetic=False, transform=transforms, synthetic_data_count=synthetic_data_count)#, transform_augmentations=transform_augmentations)
+    dataset_syn = SegNetDataset(data_dir=data_syn_dir, synthetic=True, transform=transforms, synthetic_data_count=synthetic_data_count)#, transform_augmentations=transform_augmentations)
 
     # Split dataset into train and test
     real_train_data, real_test_data = data.random_split(dataset_real, [int(len(dataset_real)*0.8), len(dataset_real)-int(len(dataset_real)*0.8)])
