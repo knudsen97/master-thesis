@@ -220,7 +220,13 @@ str1 = string(compose('figures_grid_search/loss_%s.pdf', id));
 str2 = string(compose('figures_grid_search/recall_%s.pdf', id));
 str3 = string(compose('figures_grid_search/precision_%s.pdf', id));
 
-exportgraphics(figure(1), str1, 'BackgroundColor', 'none')
-exportgraphics(figure(2), str2, 'BackgroundColor', 'none')
-exportgraphics(figure(3), str3, 'BackgroundColor', 'none')
+test_losses(length(test_losses))
+test_recall(length(test_recall))
+test_precision(length(test_precision))
+f1 = 2*(test_precision(end)*test_recall(end))/(test_precision(end)+test_recall(end))
+dL = abs(test_losses(end) - train_losses(end))
+
+% exportgraphics(figure(1), str1, 'BackgroundColor', 'none')
+% exportgraphics(figure(2), str2, 'BackgroundColor', 'none')
+% exportgraphics(figure(3), str3, 'BackgroundColor', 'none')
 % close all
