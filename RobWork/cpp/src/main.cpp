@@ -124,7 +124,6 @@ bool cvMat_2_robworkTransform(cv::Mat& cv_mat, rw::math::Transform3D<double>& tr
 
 int main()
 {
-
     std::string wcFile = "../../Project_WorkCell/Scene.wc.xml";
 
     const WorkCell::Ptr wc = WorkCellLoader::Factory::load(wcFile);
@@ -155,7 +154,7 @@ int main()
     iss >> fovy >> width >> height;
     std::cout << "Camera/depth properties: fov " << fovy << " width " << width << " height " << height
               << std::endl;
-
+    double fovy_pixel = height / 2 / tan (fovy * (2 * M_PI) / 360.0 / 2.0);
 
 
     cv::Mat image;
@@ -187,9 +186,9 @@ int main()
         // Create SimulatedRGBD RealSense camera using ideal camera intrinsics for simulation
         SimulatedCamera camera = SimulatedCamera("SimulatedCamera", fovy, camFrame, grabber);
         SimulatedScanner25D scanner = SimulatedScanner25D("SimulatedScanner25D", depthFrame, grabber25d);
-        cv::Mat intrinsics = (cv::Mat_<double>(3, 3) << 430.0, 0.0,   320.0, 
-                                                        0.0,   430.0, 240.0, 
-                                                        0.0,   0.0,   1.0);
+        cv::Mat intrinsics = (cv::Mat_<double>(3, 3) << fovy_pixel, 0.0,        width/2.0, 
+                                                        0.0,        fovy_pixel, height/2.0, 
+                                                        0.0,        0.0,        1.0);
         SimulatedRGBD RealSense(camera, scanner, intrinsics);
         RealSense.initCamera(100);
         RealSense.initScanner25D(100);
@@ -247,7 +246,13 @@ int main()
         PredictionProcessor processor(depth_scale);
 
         // Set intrinsics and extrinsics
-        auto camera_intrinsics = open3d::camera::PinholeCameraIntrinsic(width, height, intrinsics.at<double>(0, 0), intrinsics.at<double>(1, 1), intrinsics.at<double>(0, 2), intrinsics.at<double>(1, 2));
+        auto camera_intrinsics = open3d::camera::PinholeCameraIntrinsic(width, 
+                                    height, 
+                                    intrinsics.at<double>(0, 0), 
+                                    intrinsics.at<double>(1, 1), 
+                                    intrinsics.at<double>(0, 2), 
+                                    intrinsics.at<double>(1, 2)
+                                    );
         auto camera_extrinsics = Eigen::Matrix4d::Identity();
         processor.setIntrinsicsAndExtrinsics(camera_intrinsics, camera_extrinsics);
         
@@ -436,6 +441,7 @@ int main()
             time += time_step;
         }
         rw::loaders::PathLoader::storeTimedStatePath(*wc, replayPath, "../../Project_WorkCell/RRTPath.rwplay");
+        std::cout << "replayfile created" << std::endl;
         
 
         // Close camera, scanner and RobWorkStudio
