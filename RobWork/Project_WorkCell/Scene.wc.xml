@@ -72,7 +72,7 @@
 
 <!-- inserting objects -->
 <Frame name="CubeReference" refframe="Container">
-	 <RPY> 0 0 0 </RPY> <Pos> 0.3 0.1 0.02 </Pos> <!--<Pos> 0.3 0.3 0.02 </Pos> -->
+	 <RPY> 0 0 0 </RPY> <Pos> 0.3 0.1 0.02 </Pos> 
 </Frame>
 <Include file="objects/puzzle/puzzle.xml" />
 
@@ -89,12 +89,14 @@
 <Frame name="ZendiumReference" refframe="Container">
 	<RPY> 0 0 0 </RPY> <Pos> 0.15 0.49 0.02 </Pos>
 </Frame>
-<Include file="objects/zendium/zendium.xml" />
+<Include file="objects/zendium/zendium.xml" /> 
 
 <Frame name="KodimagnylReference" refframe="Container">
 	<RPY> 0 0 0 </RPY> <Pos> 0.15 0.1 0.02 </Pos>
 </Frame>
-<Include file="objects/kodimagnyl/kodimagnyl.xml" />
+<Include file="objects/kodimagnyl/kodimagnyl.xml" />  
+
+
 
 <CollisionSetup file="SceneCollisionSetup.prox.xml" /> 
 

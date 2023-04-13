@@ -214,3 +214,7 @@ _*
 .vscode/
 .vscode/*
 */.vscode/*
+
+
+# Ignore rwsettings
+*rwsettings*
