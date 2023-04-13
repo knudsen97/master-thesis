@@ -39,7 +39,7 @@ public:
     int findIndexOfClosestPoint(const PointCloudPtr &pc, const cv::Point3d &p_cam, bool flip=true);
 
     void computeRotationMatrixFromNormal(const Eigen::Vector3d &normal, cv::Mat &R);
-    void computeCenters(const cv::Mat &image, std::vector<cv::Point2i> &dest);
+    void computeCenters(const cv::Mat &image, std::vector<cv::Point2i> &dest, int max_radius=10000);
     void setBounds(cv::Scalar lower, cv::Scalar upper);
 
 
