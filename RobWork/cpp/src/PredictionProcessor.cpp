@@ -156,7 +156,7 @@ void PredictionProcessor::computeRotationMatrixFromNormal(const Eigen::Vector3d 
  * @param image The image to compute the centers from.
  * @param dest The vector to save the centers to.
 */
-void PredictionProcessor::computeCenters(const cv::Mat &image, std::vector<cv::Point2i> &dest)
+void PredictionProcessor::computeCenters(const cv::Mat &image, std::vector<cv::Point2i> &dest, int max_radius)
 {
     /* Isolate green channel */ 
     cv::Mat bgr[3];
@@ -164,7 +164,7 @@ void PredictionProcessor::computeCenters(const cv::Mat &image, std::vector<cv::P
     cv::Mat greenOnly = bgr[1];
 
     cv::Mat labels, stats, centroids;
-    int nLabels = cv::connectedComponentsWithStats(greenOnly, labels, stats, centroids);
+    cv::connectedComponentsWithStats(greenOnly, labels, stats, centroids);
 
     // Sort centroids by size
     std::vector<std::pair<int, cv::Point2i>> sizeCentroids; // (size, centroid)
@@ -172,8 +172,13 @@ void PredictionProcessor::computeCenters(const cv::Mat &image, std::vector<cv::P
     {
         int size = stats.at<int>(i, cv::CC_STAT_AREA);
         cv::Point2i centroidInt = cv::Point2i(centroids.at<double>(i, 0), centroids.at<double>(i, 1));
-        sizeCentroids.push_back(std::make_pair(size, centroidInt));
         std::cout << "(size, centroid): (" << size << ", " << centroidInt << ")" << std::endl;
+        if (size > max_radius)
+        {
+            std::cout << "skipping" << std::endl;
+            continue;
+        }
+        sizeCentroids.push_back(std::make_pair(size, centroidInt));
     }
     std::sort(sizeCentroids.begin(), sizeCentroids.end(), [](const std::pair<int, cv::Point2i> &a, const std::pair<int, cv::Point2i> &b) {
         return a.first > b.first;
@@ -181,7 +186,7 @@ void PredictionProcessor::computeCenters(const cv::Mat &image, std::vector<cv::P
 
     // Extract centroids from sizeCentroids into a vector
     dest.resize(sizeCentroids.size());
-    for (int i = 0; i < dest.size(); i++)
+    for (size_t i = 0; i < dest.size(); i++)
     {
         dest[i] = sizeCentroids[i].second;
         // std::cout << "sorted: " << sizeCentroids[i].second << std::endl;

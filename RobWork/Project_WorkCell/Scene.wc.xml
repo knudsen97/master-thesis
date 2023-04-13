@@ -71,69 +71,30 @@
 </Frame>
 
 <!-- inserting objects -->
-
-<!-- <Frame name="Cube" refframe="Table"  type="Movable" daf="true" >
-	<RPY> 0 0 0 </RPY> <Pos> 0 0.474 0.17 </Pos>
-	<Drawable name="Cube1" refframe="Cube1">
-		<RGB>0.5 0 0</RGB>
-		<Polytope file="objects/puzzle/Part_1" />
-	</Drawable>
-	<Drawable name="Cube2" refframe="Cube2">
-		<RGB>1 1 0</RGB>
-		<Polytope file="objects/puzzle/Part_2" />
-	</Drawable>
-	<Drawable name="Cube3" refframe="Cube3">
-		<RGB>0 0 1</RGB>
-		<Polytope file="objects/puzzle/Part_3" />
-	</Drawable>
-	<Drawable name="Cube4" refframe="Cube4">
-		<RGB>0 1 0</RGB>
-		<Polytope file="objects/puzzle/Part_4" />
-	</Drawable>
-</Frame> -->
-
-<!-- inserting objects -->
-<Frame name="Cube" refframe="Container"  type="Movable" daf="true" >
-    <RPY> 0 0 0 </RPY> <Pos> 0.3 0.3 0.02 </Pos>
-    <Drawable name="Cube1" refframe="Cube1">
-        <RGB>0.5 0 0</RGB>
-        <Polytope file="objects/puzzle/Part_1" />
-    </Drawable>
-    <Drawable name="Cube2" refframe="Cube2">
-        <RGB>1 1 0</RGB>
-        <Polytope file="objects/puzzle/Part_2" />
-    </Drawable>
-    <Drawable name="Cube3" refframe="Cube3">
-        <RGB>0 0 1</RGB>
-        <Polytope file="objects/puzzle/Part_3" />
-    </Drawable>
-    <Drawable name="Cube4" refframe="Cube4">
-        <RGB>0 1 0</RGB>
-        <Polytope file="objects/puzzle/Part_4" />
-    </Drawable>
+<Frame name="CubeReference" refframe="Container">
+	 <RPY> 0 0 0 </RPY> <Pos> 0.3 0.1 0.02 </Pos> <!--<Pos> 0.3 0.3 0.02 </Pos> -->
 </Frame>
-<!-- 
-<Frame name="Cube" refframe="Table"  type="Movable" daf="true" >
-    <RPY> 0 0 0 </RPY> <Pos> 0 0.474 0.17 </Pos>
-    <Drawable name="Cube1" refframe="Cube1">
-        <RGB>0.5 0 0</RGB>
-        <Polytope file="objects/puzzle/Part_1" />
-    </Drawable>
-    <Drawable name="Cube2" refframe="Cube2">
-        <RGB>1 1 0</RGB>
-        <Polytope file="objects/puzzle/Part_2" />
-    </Drawable>
-    <Drawable name="Cube3" refframe="Cube3">
-        <RGB>0 0 1</RGB>
-        <Polytope file="objects/puzzle/Part_3" />
-    </Drawable>
-    <Drawable name="Cube4" refframe="Cube4">
-        <RGB>0 1 0</RGB>
-        <Polytope file="objects/puzzle/Part_4" />
-    </Drawable>
-</Frame> -->
+<Include file="objects/puzzle/puzzle.xml" />
 
+<Frame name="CreeperReference" refframe="Container">
+	<RPY> 0 -40 0 </RPY> <Pos> 0.32 0.3 0.02 </Pos>
+</Frame>
+<Include file="objects/creeper/creeper.xml" />
 
+<Frame name="PanodilReference" refframe="Container">
+	<RPY> 0 0 0 </RPY> <Pos> 0.15 0.3 0.02 </Pos>
+</Frame>
+<Include file="objects/panodil/panodil.xml" />
+
+<Frame name="ZendiumReference" refframe="Container">
+	<RPY> 0 0 0 </RPY> <Pos> 0.15 0.49 0.02 </Pos>
+</Frame>
+<Include file="objects/zendium/zendium.xml" />
+
+<Frame name="KodimagnylReference" refframe="Container">
+	<RPY> 0 0 0 </RPY> <Pos> 0.15 0.1 0.02 </Pos>
+</Frame>
+<Include file="objects/kodimagnyl/kodimagnyl.xml" />
 
 <CollisionSetup file="SceneCollisionSetup.prox.xml" /> 
 
