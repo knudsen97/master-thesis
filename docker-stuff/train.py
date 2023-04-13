@@ -411,7 +411,10 @@ def main():
 
     # Save model to load in c++
     try:
-        torch.jit.save(torch.jit.script(model), f'jit_models/unet_resnet101_{args.id}.pt')
+        x = torch.randn(1,3,128,160)
+        traced_script_module = torch.jit.trace(model, x)
+        traced_script_module.save(f'jit_models/unet_resnet101_{args.id}.pt')
+        # torch.jit.save(torch.jit.script(model), f'jit_models/unet_resnet101_{args.id}.pt')
     except:
         print("Could not save model with jit.")
 
