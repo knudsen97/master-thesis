@@ -3,6 +3,7 @@
 #include <string>
 #include <thread>         // std::thread
 #include <mutex>          // std::mutex
+#include <cmath>
 
 
 // Include RobWork headers
@@ -58,21 +59,6 @@ using namespace rws;
 #include "../inc/Inference.hpp"
 #include "../inc/InverseKinematics.hpp"
 
-// void live_cam(cv::Mat& image, std::mutex& cam_mtx)
-// {
-//     int key = 0;
-//     while (cv::ord('q') != key)
-//     {
-//         while (cam_mtx.try_lock())
-//         {
-//             cv::imshow("Live camera", image);
-//             cv::waitKey(1);
-//         }
-//     }
-
-    
-
-// }
 /**
  * @brief Convert a cv::Mat to a rw::math::Transform3D<double>.
  * @param cv_mat The cv::Mat to convert.
@@ -157,14 +143,8 @@ int main()
               << std::endl;
 
 
-
     cv::Mat image;
     cv::Mat returned_image;
-    std::mutex cam_mtx;
-
-    // TODO: make a live cam thread that can be updated, by updating image with realsense camera
-    // std::thread cam_thread(live_cam, std::ref(image), std::ref(cam_mtx));
-
     bool inference_sucess;
 
     RobWorkStudioApp app("");
@@ -217,14 +197,12 @@ int main()
 
         // Get image data
         RealSense.acquireImage(state, info);
-        cam_mtx.lock();
         RealSense.getImage(image, ImageType::BGR);  
         Inference::change_image_color(image, cv::Vec3b({255, 255, 255}), cv::Vec3b({40,90,120}));
         Inference inf("../../../models/unet_resnet101_1_jit.pt");
         auto time_start = std::chrono::high_resolution_clock::now();
         inference_sucess = inf.predict(image, returned_image);
         auto time_end = std::chrono::high_resolution_clock::now();
-        cam_mtx.unlock();
         std::cout << "Time taken: " << std::chrono::duration_cast<std::chrono::milliseconds>(time_end - time_start).count() << " ms" << std::endl;
  
         if (inference_sucess)
@@ -241,6 +219,9 @@ int main()
         cv::Mat depth;
         RealSense.acquireDepth(state, info);
         RealSense.getPointCloudAndDepthImage(pc, depth);
+
+        // Add random noise to depth image 
+        RealSense.addDepthNoise(depth, 0.0, 0.1, 100);
 
         // Create PredictionProcessor object
         double depth_scale = 1e4;
@@ -339,18 +320,9 @@ int main()
         rw::math::Transform3D<> frameObjTCam;
         cvMat_2_robworkTransform(T_obj_cam, frameObjTCam);
         
-        /* Invert frameObjTCam */
-        // rw::math::Transform3D<> identity = rw::math::Transform3D<double>::identity();
-        // rw::math::Transform3D<> frameCamTObj;
-        // rw::math::Transform3D<double>::invMult(frameObjTCam, identity, frameCamTObj);
-
-        /* NOTE: it seems to do the same as above the the above is probably correct*/
-        // auto rotInverted = frameObjTCam.R().inverse();
-        // auto transInverted = rotInverted * -frameObjTCam.P();
-        // rw::math::Transform3D<> frameCamTObj = rw::math::Transform3D<double>(transInverted, rotInverted);
-
         // lets pretend that obj->cam is actually cam->obj (if this does not work, use the above code)
         rw::math::Transform3D<> frameCamTObj = frameObjTCam;
+
         // Calculate world to object transformation
         rw::math::Transform3D<> frameWorldTCam = camTransform;
         rw::math::Transform3D<> frameWorldTObj = frameWorldTCam * frameCamTObj;
@@ -369,7 +341,6 @@ int main()
         rw::loaders::PathLoader::storeTimedStatePath(*wc, collisionFree, "../../Project_WorkCell/collision_free.rwplay");
 
         rw::math::Q Qstart = UR5->getQ(state);
-
         rw::math::QMetric::Ptr metric = rw::math::MetricFactory::makeEuclidean<rw::math::Q>();
         rw::math::Q Qgoal = collisionFreeSolution[0];
         double distance = metric->distance(Qstart, Qgoal);
@@ -404,7 +375,7 @@ int main()
             rwlibs::pathplanners::RRTPlanner::RRTConnect
         );
         
-        // get path from Qstart to Qgoal
+        // Get path from Qstart to Qgoal
         rw::trajectory::QPath path;
         rw::trajectory::QPath linIntPath;
         bool pathFound = planner->query(Qstart, Qgoal, path);
@@ -443,9 +414,9 @@ int main()
         app.close();
     }
     RWS_END()
+    
 
     std::cout << "Done!" << std::endl;
-
-
     return 0;
 }
+// End of main
