@@ -20,9 +20,6 @@ private:
     open3d::camera::PinholeCameraIntrinsic _intrinsics;
     Eigen::Matrix4d _extrinsics;
     Eigen::Matrix4d _flip_mat;
-    /* hardcoded values for now */
-    cv::Scalar _lowerBound = cv::Scalar(40,30,30);
-    cv::Scalar _upperBound = cv::Scalar(80,255,255);
 
 public:
     // Constructors and destructor
@@ -39,8 +36,7 @@ public:
     int findIndexOfClosestPoint(const PointCloudPtr &pc, const cv::Point3d &p_cam, bool flip=true);
 
     void computeRotationMatrixFromNormal(const Eigen::Vector3d &normal, cv::Mat &R);
-    void computeCenters(const cv::Mat &image, std::vector<cv::Point2i> &dest);
-    void setBounds(cv::Scalar lower, cv::Scalar upper);
+    void computeCenters(const cv::Mat &image, std::vector<cv::Point2i> &dest, int max_radius=10000);
 
 
 private:

@@ -3,6 +3,7 @@
 #include <string>
 #include <thread>         // std::thread
 #include <mutex>          // std::mutex
+#include <cmath>
 
 
 // Include RobWork headers
@@ -58,21 +59,6 @@ using namespace rws;
 #include "../inc/Inference.hpp"
 #include "../inc/InverseKinematics.hpp"
 
-// void live_cam(cv::Mat& image, std::mutex& cam_mtx)
-// {
-//     int key = 0;
-//     while (cv::ord('q') != key)
-//     {
-//         while (cam_mtx.try_lock())
-//         {
-//             cv::imshow("Live camera", image);
-//             cv::waitKey(1);
-//         }
-//     }
-
-    
-
-// }
 /**
  * @brief Convert a cv::Mat to a rw::math::Transform3D<double>.
  * @param cv_mat The cv::Mat to convert.
@@ -122,9 +108,29 @@ bool cvMat_2_robworkTransform(cv::Mat& cv_mat, rw::math::Transform3D<double>& tr
     return true;
 }
 
-int main()
+int main(int argc, char** argv)
 {
+    std::string model_file_name = "unet_resnet101_1_jit.pt";
+    std::string model_name;
 
+    for (size_t i = 0; i < argc; i++)
+    {
+        if (std::string(argv[i]) == "--model")
+        {
+            model_file_name = argv[i + 1];
+        }
+        else if (std::string(argv[i]) == "--model_name")
+        {
+            model_name = argv[i + 1];
+        }
+    }
+    if (model_name.empty())
+    {
+        model_name = model_file_name.substr(0, model_file_name.size() - 7);
+    }
+        
+
+    // Load workcell
     std::string wcFile = "../../Project_WorkCell/Scene.wc.xml";
 
     const WorkCell::Ptr wc = WorkCellLoader::Factory::load(wcFile);
@@ -155,16 +161,10 @@ int main()
     iss >> fovy >> width >> height;
     std::cout << "Camera/depth properties: fov " << fovy << " width " << width << " height " << height
               << std::endl;
-
-
+    double fovy_pixel = height / 2 / tan (fovy * (2 * M_PI) / 360.0 / 2.0);
 
     cv::Mat image;
     cv::Mat returned_image;
-    std::mutex cam_mtx;
-
-    // TODO: make a live cam thread that can be updated, by updating image with realsense camera
-    // std::thread cam_thread(live_cam, std::ref(image), std::ref(cam_mtx));
-
     bool inference_sucess;
 
     RobWorkStudioApp app("");
@@ -187,9 +187,9 @@ int main()
         // Create SimulatedRGBD RealSense camera using ideal camera intrinsics for simulation
         SimulatedCamera camera = SimulatedCamera("SimulatedCamera", fovy, camFrame, grabber);
         SimulatedScanner25D scanner = SimulatedScanner25D("SimulatedScanner25D", depthFrame, grabber25d);
-        cv::Mat intrinsics = (cv::Mat_<double>(3, 3) << 430.0, 0.0,   320.0, 
-                                                        0.0,   430.0, 240.0, 
-                                                        0.0,   0.0,   1.0);
+        cv::Mat intrinsics = (cv::Mat_<double>(3, 3) << fovy_pixel, 0.0,        width/2.0, 
+                                                        0.0,        fovy_pixel, height/2.0, 
+                                                        0.0,        0.0,        1.0);
         SimulatedRGBD RealSense(camera, scanner, intrinsics);
         RealSense.initCamera(100);
         RealSense.initScanner25D(100);
@@ -217,14 +217,12 @@ int main()
 
         // Get image data
         RealSense.acquireImage(state, info);
-        cam_mtx.lock();
         RealSense.getImage(image, ImageType::BGR);  
         Inference::change_image_color(image, cv::Vec3b({255, 255, 255}), cv::Vec3b({40,90,120}));
-        Inference inf("../../../models/unet_resnet101_1_jit.pt");
+        Inference inf("../../../models/" + model_file_name);
         auto time_start = std::chrono::high_resolution_clock::now();
         inference_sucess = inf.predict(image, returned_image);
         auto time_end = std::chrono::high_resolution_clock::now();
-        cam_mtx.unlock();
         std::cout << "Time taken: " << std::chrono::duration_cast<std::chrono::milliseconds>(time_end - time_start).count() << " ms" << std::endl;
  
         if (inference_sucess)
@@ -242,12 +240,21 @@ int main()
         RealSense.acquireDepth(state, info);
         RealSense.getPointCloudAndDepthImage(pc, depth);
 
+        // Add random noise to depth image 
+        RealSense.addDepthNoise(depth, 0.0, 0.1, 100);
+
         // Create PredictionProcessor object
         double depth_scale = 1e4;
         PredictionProcessor processor(depth_scale);
 
         // Set intrinsics and extrinsics
-        auto camera_intrinsics = open3d::camera::PinholeCameraIntrinsic(width, height, intrinsics.at<double>(0, 0), intrinsics.at<double>(1, 1), intrinsics.at<double>(0, 2), intrinsics.at<double>(1, 2));
+        auto camera_intrinsics = open3d::camera::PinholeCameraIntrinsic(width, 
+                                    height, 
+                                    intrinsics.at<double>(0, 0), 
+                                    intrinsics.at<double>(1, 1), 
+                                    intrinsics.at<double>(0, 2), 
+                                    intrinsics.at<double>(1, 2)
+                                    );
         auto camera_extrinsics = Eigen::Matrix4d::Identity();
         processor.setIntrinsicsAndExtrinsics(camera_intrinsics, camera_extrinsics);
         
@@ -268,8 +275,8 @@ int main()
         // Draw circle in middle of image
         cv::Point center = cv::Point(400, 200);
         std::vector<cv::Point> centers;
-        processor.computeCenters(returned_image, centers);
-        center = centers[1];
+        processor.computeCenters(returned_image, centers, 4000);
+        center = centers[0];
         for (auto c : centers)
             std::cout << "center: " << c << std::endl;
         cv::circle(image, center, 5, cv::Scalar(0, 0, 255), -1);
@@ -324,33 +331,38 @@ int main()
         line.colors_.push_back(Eigen::Vector3d(1, 0, 0));
         auto line_ptr = std::make_shared<open3d::geometry::LineSet>(line);
 
+        // Create image file names to save files
+        std::string image_file_name = "../images/" + model_name + "_image.png";
+        std::string returned_image_file_name = "../images/" + model_name + "_returned_image.png";
+        std::string point_cloud_file_name = "../images/" + model_name + "_point_cloud.png";
+
         // Visualize image and point cloud
         cv::imshow("Image", image);
         cv::imshow("Depth", depth);
         cv::imshow("Inference", returned_image);
+        cv::imwrite(image_file_name, image);
+        cv::imwrite(returned_image_file_name, returned_image);
         open3d::visualization::VisualizerWithKeyCallback o3d_vis;
         o3d_vis.CreateVisualizerWindow("PointCloud", width, height);
         o3d_vis.AddGeometry(pc_new);
         o3d_vis.AddGeometry(line_ptr);
+        o3d_vis.CaptureScreenImage(point_cloud_file_name);
         o3d_vis.Run();
 
-
+        if(point_3d(0) - center_3d.x < 0.001 && point_3d(1) - center_3d.y < 0.001)
+        {
+            std::cerr << "Invalid point found by inference" << std::endl;
+            RealSense.close();
+            app.close();
+            return -1;
+        }
         // transform from world to object
         rw::math::Transform3D<> frameObjTCam;
         cvMat_2_robworkTransform(T_obj_cam, frameObjTCam);
         
-        /* Invert frameObjTCam */
-        // rw::math::Transform3D<> identity = rw::math::Transform3D<double>::identity();
-        // rw::math::Transform3D<> frameCamTObj;
-        // rw::math::Transform3D<double>::invMult(frameObjTCam, identity, frameCamTObj);
-
-        /* NOTE: it seems to do the same as above the the above is probably correct*/
-        // auto rotInverted = frameObjTCam.R().inverse();
-        // auto transInverted = rotInverted * -frameObjTCam.P();
-        // rw::math::Transform3D<> frameCamTObj = rw::math::Transform3D<double>(transInverted, rotInverted);
-
         // lets pretend that obj->cam is actually cam->obj (if this does not work, use the above code)
         rw::math::Transform3D<> frameCamTObj = frameObjTCam;
+
         // Calculate world to object transformation
         rw::math::Transform3D<> frameWorldTCam = camTransform;
         rw::math::Transform3D<> frameWorldTObj = frameWorldTCam * frameCamTObj;
@@ -359,7 +371,13 @@ int main()
         // double angle_step = 0.1; // increment in roll angle
         // double start = -M_PI;
         // double end = M_PI;
-        solver.solve(frameWorldTObj, M_PI/2);
+        if (!solver.solve(frameWorldTObj, M_PI/2))
+        {
+            std::cerr << "No solution found for inverse kinematics" << std::endl;
+            RealSense.close();
+            app.close();
+            return -1;
+        }
         std::vector<rw::math::Q> collisionFreeSolution = solver.getSolutions();
         auto collisionFree = solver.getReplay();
 
@@ -369,7 +387,6 @@ int main()
         rw::loaders::PathLoader::storeTimedStatePath(*wc, collisionFree, "../../Project_WorkCell/collision_free.rwplay");
 
         rw::math::Q Qstart = UR5->getQ(state);
-
         rw::math::QMetric::Ptr metric = rw::math::MetricFactory::makeEuclidean<rw::math::Q>();
         rw::math::Q Qgoal = collisionFreeSolution[0];
         double distance = metric->distance(Qstart, Qgoal);
@@ -404,7 +421,7 @@ int main()
             rwlibs::pathplanners::RRTPlanner::RRTConnect
         );
         
-        // get path from Qstart to Qgoal
+        // Get path from Qstart to Qgoal
         rw::trajectory::QPath path;
         rw::trajectory::QPath linIntPath;
         bool pathFound = planner->query(Qstart, Qgoal, path);
@@ -436,6 +453,7 @@ int main()
             time += time_step;
         }
         rw::loaders::PathLoader::storeTimedStatePath(*wc, replayPath, "../../Project_WorkCell/RRTPath.rwplay");
+        std::cout << "replayfile created" << std::endl;
         
 
         // Close camera, scanner and RobWorkStudio
@@ -443,9 +461,9 @@ int main()
         app.close();
     }
     RWS_END()
+    
 
     std::cout << "Done!" << std::endl;
-
-
     return 0;
 }
+// End of main
