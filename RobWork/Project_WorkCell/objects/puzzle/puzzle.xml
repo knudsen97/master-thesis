@@ -1,4 +1,4 @@
-<SerialDevice name="Cube">
+<SerialDevice name="puzzle">
 <Frame name="Base">
     <RPY> 0 0 0 </RPY> <Pos> 0 0 0</Pos> 
 </Frame>
@@ -12,7 +12,7 @@
   	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
     <RGB>1 1 0</RGB>
     <Polytope file="Part_2" />
-</Drawable>
+</Drawable> 
 <Drawable name="Cube3" refframe="Base">
   	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
     <RGB>0 0 1</RGB>
