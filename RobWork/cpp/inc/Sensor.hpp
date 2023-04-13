@@ -52,6 +52,8 @@ public:
     void acquireImage(State &state, const Simulator::UpdateInfo &info);
     void acquireDepth(State &state, const Simulator::UpdateInfo &info);
 
+    void addDepthNoise(cv::Mat &depth, double mean=0.0, double stddev=0.1, double scale = 1.0);
+
     void getImage(cv::Mat &image_out, int imgType = ImageType::BGR);
     void getPointCloudAndDepthImage(PointCloudPtr &pc_out, cv::Mat &depthImage_out);//, const cv::Mat &R, const cv::Mat &t);
 
