@@ -131,9 +131,10 @@ min(delta_loss)
 %% Read single file
 clc;clear;close all;
 
-file_idx = 22;
-id = '22_extended_baseline';
-filename = append('results/results', id, '.csv');
+header = 'Batch Normalization';
+file_idx = 10;
+id = '10_batchnorm';
+filename = append('results/results_', id, '.csv');
 
 % Open CSV file and convert to array
 T = readtable(filename, 'NumHeaderLines', 0);
@@ -181,7 +182,7 @@ figure(1)
 hold on
 plot(1:1:epochs_elapsed, train_losses)
 plot(1:1:epochs_elapsed, test_losses)
-title(compose('Train and Test Losses, Grid Search Test %d', file_idx))
+title(compose('Train and Test Losses, Baseline %d with %s', file_idx, header))
 
 legend('Train loss', 'Test loss')
 xlabel('# of epochs')
@@ -192,7 +193,7 @@ figure(2)
 hold on
 plot(1:1:epochs_elapsed, train_recall)
 plot(1:1:epochs_elapsed, test_recall)
-title(compose('Train and Test Recall, Grid Search Test %d', file_idx))
+title(compose('Train and Test Recall, Baseline %d with %s', file_idx, header))
 legend('Train recall', 'Test recall')
 xlabel('# of epochs')
 ylabel('Recall [%]')
@@ -205,7 +206,7 @@ figure(3)
 hold on
 plot(1:1:epochs_elapsed, train_precision)
 plot(1:1:epochs_elapsed, test_precision)
-title(compose('Train and Test Precision, Grid Search Test %d', file_idx))
+title(compose('Train and Test Precision, Baseline %d with %s', file_idx, header))
 legend('Train precision', 'Test precision')
 
 xlabel('# of epochs')
@@ -216,17 +217,22 @@ ylim([minA-0.05 1])
 hold off
 drawnow
 
-str1 = string(compose('figures_grid_search/loss_%s.pdf', id));
-str2 = string(compose('figures_grid_search/recall_%s.pdf', id));
-str3 = string(compose('figures_grid_search/precision_%s.pdf', id));
 
-test_losses(length(test_losses))
-test_recall(length(test_recall))
-test_precision(length(test_precision))
+loss = test_losses(length(test_losses))
+recall = test_recall(length(test_recall))
+precision = test_precision(length(test_precision))
 f1 = 2*(test_precision(end)*test_recall(end))/(test_precision(end)+test_recall(end))
 dL = abs(test_losses(end) - train_losses(end))
+length(test_losses)
 
-% exportgraphics(figure(1), str1, 'BackgroundColor', 'none')
-% exportgraphics(figure(2), str2, 'BackgroundColor', 'none')
-% exportgraphics(figure(3), str3, 'BackgroundColor', 'none')
+
+
+% Export pdf's
+str1 = string(compose('figures/loss_%s.pdf', id));
+str2 = string(compose('figures/recall_%s.pdf', id));
+str3 = string(compose('figures/precision_%s.pdf', id));
+
+exportgraphics(figure(1), str1, 'BackgroundColor', 'none')
+exportgraphics(figure(2), str2, 'BackgroundColor', 'none')
+exportgraphics(figure(3), str3, 'BackgroundColor', 'none')
 % close all
