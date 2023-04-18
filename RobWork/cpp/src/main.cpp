@@ -123,13 +123,56 @@ bool cvMat_2_robworkTransform(cv::Mat& cv_mat, rw::math::Transform3D<double>& tr
     return true;
 }
 
+/**
+ * @brief Evaluate the prediction based on blob.
+ * @param blobPredictionCenter The center of the predicted blobs.
+ * @param groundTruth The ground truth image.
+ * @return The result of the evaluation. Will be filled with the number of true positives and false positives in that order.
+*/
+std::vector<int> evaluateBlobCount(std::vector<cv::Point> blobPredictionCenter, cv::Mat groundTruth)
+{
+    std::vector<int> result(2);
+    int truePositives = 0;
+    int falsePositives = 0;
+    cv::Mat greenChannel;
+    cv::Mat RGB[3];
+
+    /* isolate green channel */
+    if (groundTruth.channels() != 1)
+    {
+        cv::split(groundTruth, RGB);
+        greenChannel = RGB[1];
+    }
+    else
+    {
+        greenChannel = groundTruth;
+    }
+
+    /* count the number of blob it got right and wrong */
+    for (size_t i = 0; i < blobPredictionCenter.size(); i++)
+    {
+        if (greenChannel.at<uchar>(blobPredictionCenter[i]) == 255)
+        {
+            truePositives++;
+        }
+        else
+        {
+            falsePositives++;
+        }
+    }
+
+    result[0] = truePositives;
+    result[1] = falsePositives;
+    return result;
+}
+
 int main(int argc, char** argv)
 {
     std::string model_name = "unet_resnet101_1_jit.pt";
     std::string file_name;
     std::string folder_name;
 
-    for (size_t i = 0; i < argc; i++)
+    for (int i = 0; i < argc; i++)
     {
         if (std::string(argv[i]) == "--model_name")
         {
@@ -250,7 +293,7 @@ int main(int argc, char** argv)
         cam_mtx.lock();
         RealSense.getImage(image, ImageType::BGR);  
         // Inference::change_image_color(image, cv::Vec3b({255, 255, 255}), cv::Vec3b({40,90,120}));
-        Inference inf("../../../models/" + model_name);
+        Inference inf("../../../jit_models/" + model_name);
         auto time_start = std::chrono::high_resolution_clock::now();
         inference_sucess = inf.predict(image, returned_image);
         auto time_end = std::chrono::high_resolution_clock::now();
