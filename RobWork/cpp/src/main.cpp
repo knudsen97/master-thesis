@@ -22,6 +22,7 @@
 #include <rw/models/SerialDevice.hpp>
 #include <rw/proximity/CollisionDetector.hpp>
 #include <rw/proximity/CollisionStrategy.hpp>
+#include <rw/kinematics/FKRange.hpp>
 
 #include <rwlibs/simulation/GLFrameGrabber.hpp>
 #include <rwlibs/simulation/GLFrameGrabber25D.hpp>
@@ -115,37 +116,39 @@ bool cvMat_2_robworkTransform(cv::Mat& cv_mat, rw::math::Transform3D<double>& tr
  * @param groundTruth The ground truth image.
  * @return The result of the evaluation. Will be filled with the number of true positives and false positives in that order.
 */
-std::vector<int> evaluateBlobCount(std::vector<cv::Point> blobPredictionCenter, cv::Mat groundTruth)
+std::vector<int> evaluateBlobCount(std::vector<cv::Point> blobPredictionCenter, const WorkCell::Ptr wc)
 {
     std::vector<int> result(2);
+    std::vector<std::string> objectNames;
+    std::vector<Frame*> objectFrames;
+    std::vector<rw::models::SerialDevice::Ptr> objDevices;
     int truePositives = 0;
     int falsePositives = 0;
-    cv::Mat greenChannel;
-    cv::Mat RGB[3];
+    std::string filePath = wc->getFilePath();
 
-    /* isolate green channel */
-    if (groundTruth.channels() != 1)
+    std::string objPath = filePath.substr(0, filePath.find_last_of("/")) + "/objects";
+    
+    for (auto& p: boost::filesystem::directory_iterator(objPath))
     {
-        cv::split(groundTruth, RGB);
-        greenChannel = RGB[1];
-    }
-    else
-    {
-        greenChannel = groundTruth;
+        objectNames.push_back(p.path().filename().string());
     }
 
-    /* count the number of blob it got right and wrong */
-    for (size_t i = 0; i < blobPredictionCenter.size(); i++)
+    //get object devices
+    for (auto& objName : objectNames)
     {
-        if (greenChannel.at<uchar>(blobPredictionCenter[i]) == 255)
-        {
-            truePositives++;
-        }
-        else
-        {
-            falsePositives++;
-        }
+        std::string objDeviceName = objName;
+        //change first letter to upper case
+        objDeviceName[0] = std::toupper(objDeviceName[0]);
+        auto device = wc->findDevice<rw::models::SerialDevice>(objDeviceName);
+        objDevices.push_back(device);
+
+
+        rw::models::CollisionDetector::Ptr detector = wc->getCollisionDetector();
+
     }
+
+
+
 
     result[0] = truePositives;
     result[1] = falsePositives;
@@ -329,61 +332,76 @@ int main(int argc, char** argv)
         cv::Point center = cv::Point(400, 200);
         std::vector<cv::Point> centers;
         processor.computeCenters(returned_image, centers, 10000);
-        center = centers[0];
-        // center = centers[centers.size()-1];
-        for (auto c : centers)
-            std::cout << "center: " << c << std::endl;
-        cv::circle(image, center, 5, cv::Scalar(0, 0, 255), -1);
-        cv::circle(returned_image, center, 5, cv::Scalar(0, 0, 0), -1);
+        bool estimateNormal = !centers.empty();
 
-        // Estimate normals for point cloud and normalize them
-        processor.estimateAllNormals(pc_new, 0.05, 30, true);
-
-        // Convert pixel to 3d point
+        Eigen::Vector3d normal;
+        Eigen::Vector3d point_3d;
         cv::Point3d center_3d;
-        processor.pixel2cam(depth, center, center_3d);
-
-        // Find index of closest point in point cloud to 3d center point
-        int min_index = processor.findIndexOfClosestPoint(pc_new, center_3d, flip);
-
-        // Get normal and 3d point from closest point in point cloud 
-        auto point_3d = pc_new->points_[min_index];
-        auto normal = pc_new->normals_[min_index];
-
-
-        // Flip normal if it points away from camera
-        if (normal(2) < 0)
-            normal = -normal;
-
-        cv::Mat R_obj_cam;
-        processor.computeRotationMatrixFromNormal(normal, R_obj_cam);
-        // std::cout << "R_obj_cam: \n" << R_obj_cam << std::endl;
-        
-        // manual flipping for test
-        center_3d.x = -center_3d.x;
-        center_3d.z = -center_3d.z;
-
-        // Create transformation matrix of object in camera frame
         cv::Mat T_obj_cam;
-        cv::hconcat(R_obj_cam, cv::Mat(center_3d), T_obj_cam);
-        cv::vconcat(T_obj_cam, cv::Mat::zeros(1, 4, CV_64F), T_obj_cam);
-        T_obj_cam.at<double>(3, 3) = 1;
-        std::cout << "T_obj_cam: \n" << T_obj_cam << std::endl;
+        if (estimateNormal)
+        {
+            center = centers[0];
+            std::vector<int> tp_fp;
+            tp_fp = evaluateBlobCount(centers, wc);
+            // center = centers[centers.size()-1];
+            for (auto c : centers)
+                std::cout << "center: " << c << std::endl;
+            cv::circle(image, center, 5, cv::Scalar(0, 0, 255), -1);
+            cv::circle(returned_image, center, 5, cv::Scalar(0, 0, 0), -1);
+
+            // Estimate normals for point cloud and normalize them
+            processor.estimateAllNormals(pc_new, 0.05, 30, true);
+
+            // Convert pixel to 3d point
+            
+            processor.pixel2cam(depth, center, center_3d);
+
+            // Find index of closest point in point cloud to 3d center point
+            int min_index = processor.findIndexOfClosestPoint(pc_new, center_3d, flip);
+
+            // Get normal and 3d point from closest point in point cloud 
+            point_3d = pc_new->points_[min_index];
+            normal = pc_new->normals_[min_index];
 
 
+            // Flip normal if it points away from camera
+            if (normal(2) < 0)
+                normal = -normal;
+
+            cv::Mat R_obj_cam;
+            processor.computeRotationMatrixFromNormal(normal, R_obj_cam);
+            // std::cout << "R_obj_cam: \n" << R_obj_cam << std::endl;
+            
+            // manual flipping for test
+            center_3d.x = -center_3d.x;
+            center_3d.z = -center_3d.z;
+
+            // Create transformation matrix of object in camera frame
+            cv::hconcat(R_obj_cam, cv::Mat(center_3d), T_obj_cam);
+            cv::vconcat(T_obj_cam, cv::Mat::zeros(1, 4, CV_64F), T_obj_cam);
+            T_obj_cam.at<double>(3, 3) = 1;
+        }
+        else
+        {
+            std::cout << "No blob found" << std::endl;
+        }
 
 
         // ------------------------------------------------------
         // ------------- Visualization --------------------------
         // ------------------------------------------------------
         // Create normal vector line
-        double scale = 0.1;
-        auto line = open3d::geometry::LineSet();
-        line.points_.push_back(point_3d);
-        line.points_.push_back(point_3d + normal*scale);
-        line.lines_.push_back(Eigen::Vector2i(0, 1));
-        line.colors_.push_back(Eigen::Vector3d(1, 0, 0));
-        auto line_ptr = std::make_shared<open3d::geometry::LineSet>(line);
+        std::shared_ptr<open3d::geometry::LineSet> line_ptr;
+        if (estimateNormal)
+        {
+            double scale = 0.1;
+            auto line = open3d::geometry::LineSet();
+            line.points_.push_back(point_3d);
+            line.points_.push_back(point_3d + normal*scale);
+            line.lines_.push_back(Eigen::Vector2i(0, 1));
+            line.colors_.push_back(Eigen::Vector3d(1, 0, 0));
+            line_ptr = std::make_shared<open3d::geometry::LineSet>(line);
+        }
 
         // Create image file names to save files
         std::string image_file_name = file_name + "_image.png";
@@ -401,7 +419,8 @@ int main(int argc, char** argv)
         open3d::visualization::VisualizerWithKeyCallback o3d_vis;
         o3d_vis.CreateVisualizerWindow("PointCloud", width, height);
         o3d_vis.AddGeometry(pc_new);
-        o3d_vis.AddGeometry(line_ptr);
+        if (estimateNormal)
+            o3d_vis.AddGeometry(line_ptr);
         o3d_vis.CaptureScreenImage(folder_name + '/' + point_cloud_file_name);
         // o3d_vis.Run();
         // o3d_vis.DestroyVisualizerWindow();
@@ -417,7 +436,14 @@ int main(int argc, char** argv)
 
         // transform from world to object
         rw::math::Transform3D<> frameObjTCam;
-        cvMat_2_robworkTransform(T_obj_cam, frameObjTCam);
+        bool transSuccess = cvMat_2_robworkTransform(T_obj_cam, frameObjTCam);
+        if (!transSuccess)
+        {
+            std::cerr << "Could not convert transformation matrix" << std::endl;
+            RealSense.close();
+            app.close();
+            return -1;
+        }
         
         // lets pretend that obj->cam is actually cam->obj (if this does not work, use the above code)
         rw::math::Transform3D<> frameCamTObj = frameObjTCam;
