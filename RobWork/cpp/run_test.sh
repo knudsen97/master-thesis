@@ -70,13 +70,15 @@ cd build
 
 for j in ${!workcells[@]}
 do
-    cp -f ../../Project_WorkCell/test_scenes/${workcells[$j]} ../../Project_WorkCell/Scene.wc.xml
+    # change test scene
+    cp -f ../../Project_WorkCell/test_scenes/${workcells[$j]} ../../Project_WorkCell/Scene.wc.xml 
     for i in ${!models[@]}
     do
         echo "Running model: ${models[$i]}"
         echo "File name: ${file_names[$i]}"
         echo "Running command: ./main --model_name ${models[$i]} --file_name ${file_names[$i]} --folder_name ${folder_names[$i]}"
         ./main --model_name ${models[$i]} --file_name ${file_names[$i]} --folder_name ${folder_names[$i]}
+        # trim point cloud image
         convert -trim ../images/${folder_names[$i]}/${file_names[$i]}_point_cloud.png ../images/${folder_names[$i]}/${file_names[$i]}_point_cloud.png
     done
 done
