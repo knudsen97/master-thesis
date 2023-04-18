@@ -3,6 +3,7 @@
 #include <string>
 #include <thread>         // std::thread
 #include <mutex>          // std::mutex
+#include <boost/filesystem.hpp>
 
 
 // Include RobWork headers
@@ -124,23 +125,32 @@ bool cvMat_2_robworkTransform(cv::Mat& cv_mat, rw::math::Transform3D<double>& tr
 
 int main(int argc, char** argv)
 {
-    std::string model_file_name = "unet_resnet101_1_jit.pt";
-    std::string model_name;
+    std::string model_name = "unet_resnet101_1_jit.pt";
+    std::string file_name;
+    std::string folder_name;
 
     for (size_t i = 0; i < argc; i++)
     {
-        if (std::string(argv[i]) == "--model")
-        {
-            model_file_name = argv[i + 1];
-        }
-        else if (std::string(argv[i]) == "--model_name")
+        if (std::string(argv[i]) == "--model_name")
         {
             model_name = argv[i + 1];
         }
+        else if (std::string(argv[i]) == "--file_name")
+        {
+            file_name = argv[i + 1];
+        }
+        else if (std::string(argv[i]) == "--folder_name")
+        {
+            folder_name = argv[i + 1];
+        }
     }
-    if (model_name.empty())
+    if (file_name.empty())
     {
-        model_name = model_file_name.substr(0, model_file_name.size() - 7);
+        file_name = model_name.substr(0, model_name.size() - 7);
+    }
+    if (folder_name.empty())
+    {
+        folder_name = file_name;
     }
         
 
@@ -239,8 +249,8 @@ int main(int argc, char** argv)
         RealSense.acquireImage(state, info);
         cam_mtx.lock();
         RealSense.getImage(image, ImageType::BGR);  
-        Inference::change_image_color(image, cv::Vec3b({255, 255, 255}), cv::Vec3b({40,90,120}));
-        Inference inf("../../../models/" + model_file_name);
+        // Inference::change_image_color(image, cv::Vec3b({255, 255, 255}), cv::Vec3b({40,90,120}));
+        Inference inf("../../../models/" + model_name);
         auto time_start = std::chrono::high_resolution_clock::now();
         inference_sucess = inf.predict(image, returned_image);
         auto time_end = std::chrono::high_resolution_clock::now();
@@ -294,8 +304,9 @@ int main(int argc, char** argv)
         // Draw circle in middle of image
         cv::Point center = cv::Point(400, 200);
         std::vector<cv::Point> centers;
-        processor.computeCenters(returned_image, centers, 4000);
+        processor.computeCenters(returned_image, centers, 10000);
         center = centers[0];
+        // center = centers[centers.size()-1];
         for (auto c : centers)
             std::cout << "center: " << c << std::endl;
         cv::circle(image, center, 5, cv::Scalar(0, 0, 255), -1);
@@ -351,24 +362,27 @@ int main(int argc, char** argv)
         auto line_ptr = std::make_shared<open3d::geometry::LineSet>(line);
 
         // Create image file names to save files
-        std::string image_file_name = "../images/" + model_name + "_image.png";
-        std::string returned_image_file_name = "../images/" + model_name + "_returned_image.png";
-        std::string point_cloud_file_name = "../images/" + model_name + "_point_cloud.png";
+        std::string image_file_name = file_name + "_image.png";
+        std::string returned_image_file_name = file_name + "_returned_image.png";
+        std::string point_cloud_file_name = file_name + "_point_cloud.png";
+        folder_name = "../images/" + folder_name;
+        boost::filesystem::create_directories(folder_name);
 
         // Visualize image and point cloud
-        cv::imshow("Image", image);
-        cv::imshow("Depth", depth);
-        cv::imshow("Inference", returned_image);
-        cv::imwrite(image_file_name, image);
-        cv::imwrite(returned_image_file_name, returned_image);
+        // cv::imshow("Image", image);
+        // cv::imshow("Depth", depth);
+        // cv::imshow("Inference", returned_image);
+        cv::imwrite(folder_name + '/' + image_file_name, image);
+        cv::imwrite(folder_name + '/' + returned_image_file_name, returned_image);
         open3d::visualization::VisualizerWithKeyCallback o3d_vis;
         o3d_vis.CreateVisualizerWindow("PointCloud", width, height);
         o3d_vis.AddGeometry(pc_new);
         o3d_vis.AddGeometry(line_ptr);
-        o3d_vis.CaptureScreenImage(point_cloud_file_name);
-        o3d_vis.Run();
+        o3d_vis.CaptureScreenImage(folder_name + '/' + point_cloud_file_name);
+        // o3d_vis.Run();
+        // o3d_vis.DestroyVisualizerWindow();
 
-        if(point_3d(0) - center_3d.x < 0.001 && point_3d(1) - center_3d.y < 0.001)
+        if(point_3d(0) - center_3d.x < 0.0001 && point_3d(1) - center_3d.y < 0.0001)
         {
             std::cerr << "Invalid point found by inference" << std::endl;
             RealSense.close();
