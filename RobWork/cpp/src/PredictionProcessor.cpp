@@ -106,6 +106,7 @@ void PredictionProcessor::computeRotationMatrixFromNormal(const Eigen::Vector3d 
 
 void PredictionProcessor::computeCenters(const cv::Mat &image, std::vector<cv::Point2i> &dest, int max_radius)
 {
+    int min_radius = 5;
     // // Convert image to HSV because it is easier to filter colors in the HSV color-space.
     // cv::Mat hsv;
     // cv::cvtColor(image, hsv, cv::COLOR_BGR2HSV);
@@ -118,6 +119,18 @@ void PredictionProcessor::computeCenters(const cv::Mat &image, std::vector<cv::P
     cv::Mat bgr[3];
     cv::split(image, bgr);
     cv::Mat greenOnly = bgr[1];
+    /* threshold green at 90% */
+    for (size_t i = 0; i < greenOnly.rows; i++)
+    {
+        for (size_t j = 0; j < greenOnly.cols; j++)
+        {
+            if (greenOnly.at<uint8_t>(i, j) > (int)round(0.9*255))
+                greenOnly.at<uint8_t>(i, j) = 255;
+            else
+                greenOnly.at<uint8_t>(i, j) = 0;
+        }
+    }
+    
 
     cv::Mat labels, stats, centroids;
     cv::connectedComponentsWithStats(greenOnly, labels, stats, centroids);
@@ -129,7 +142,7 @@ void PredictionProcessor::computeCenters(const cv::Mat &image, std::vector<cv::P
         int size = stats.at<int>(i, cv::CC_STAT_AREA);
         cv::Point2i centroidInt = cv::Point2i(centroids.at<double>(i, 0), centroids.at<double>(i, 1));
         std::cout << "(size, centroid): (" << size << ", " << centroidInt << ")" << std::endl;
-        if (size > max_radius)
+        if (size > max_radius || size < min_radius)
         {
             std::cout << "skipping" << std::endl;
             continue;
