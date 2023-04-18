@@ -1,24 +1,24 @@
-<SerialDevice name="Cube">
+<SerialDevice name="Puzzle">
 <Frame name="Base">
     <RPY> 0 0 0 </RPY> <Pos> 0 0 0</Pos> 
 </Frame>
 
-<Drawable name="Cube1" refframe="Base">
+<Drawable name="Puzzle1" refframe="Base">
   	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
     <RGB>0.5 0 0</RGB>
     <Polytope file="Part_1" />
 </Drawable>
-<Drawable name="Cube2" refframe="Base">
+<Drawable name="Puzzle2" refframe="Base">
   	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
     <RGB>1 1 0</RGB>
     <Polytope file="Part_2" />
 </Drawable>
-<Drawable name="Cube3" refframe="Base">
+<Drawable name="Puzzle3" refframe="Base">
   	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
     <RGB>0 0 1</RGB>
     <Polytope file="Part_3" />
 </Drawable>
-<Drawable name="Cube4" refframe="Base">
+<Drawable name="Puzzle4" refframe="Base">
   	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
     <RGB>0 1 0</RGB>
     <Polytope file="Part_4" />
