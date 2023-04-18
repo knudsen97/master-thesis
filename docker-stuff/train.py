@@ -15,7 +15,7 @@ import argparse
 
 # Create custom dataset class
 class SegNetDataset(Dataset):
-    def __init__(self, data_dir, synthetic, transform=None, synthetic_data_count = 1000):#, transform_augmentations=None):
+    def __init__(self, data_dir, synthetic, transform=None, synthetic_data_count=1000):#, transform_augmentations=None):
         self.synthetic = synthetic
         self.data_dir = data_dir
         self.synthetic_data_count = synthetic_data_count
@@ -192,7 +192,8 @@ def arg_parser():
     decoder_use_batchnorm = False
     decoder_attention_type = None
     optimizer_type_default = "Adam"
-    id_default = 0
+    id_default = '0'
+    synthetic_data_count_default = 1000
 
     # Parse command-line arguments
     parser = argparse.ArgumentParser()
@@ -200,11 +201,12 @@ def arg_parser():
     parser.add_argument('-encoder_depth', type=int, default=encoder_depth_default, help='Depth of encoder')
     parser.add_argument('-lr', type=float, default=lr_default, help='Learning rate')
     parser.add_argument('-batch_size', type=int, default=batch_size_default, help='Batch size')
+    parser.add_argument('-synthetic_data_count', type=int, default=synthetic_data_count_default, help='Number of synthetic data samples to use')
     parser.add_argument('-l2', type=float, default=l2_penalization_default, help='L2 penalization (weight decay)')
     parser.add_argument('-decoder_use_batchnorm', type=bool, default=decoder_use_batchnorm, help='Use batchnorm in decoder')
     parser.add_argument('-decoder_attention_type', type=str, default=decoder_attention_type, help='Attention type in decoder')
     parser.add_argument('-optimizer', type=str, default=optimizer_type_default, help='Type of optimizer: Adam, Adamax')
-    parser.add_argument('-id', type=int, default=id_default, help='id used for saving the results')
+    parser.add_argument('-id', type=str, default=id_default, help='id used for saving the results')
 
 
     return parser.parse_args()
@@ -300,8 +302,9 @@ def main():
     # Create dataset
     data_dir = 'data'
     data_syn_dir = 'data_synthetic'
-    dataset_real = SegNetDataset(data_dir=data_dir, synthetic=False, transform=transforms)#, transform_augmentations=transform_augmentations)
-    dataset_syn = SegNetDataset(data_dir=data_syn_dir, synthetic=True, transform=transforms)#, transform_augmentations=transform_augmentations)
+    synthetic_data_count = args.synthetic_data_count
+    dataset_real = SegNetDataset(data_dir=data_dir, synthetic=False, transform=transforms, synthetic_data_count=synthetic_data_count)#, transform_augmentations=transform_augmentations)
+    dataset_syn = SegNetDataset(data_dir=data_syn_dir, synthetic=True, transform=transforms, synthetic_data_count=synthetic_data_count)#, transform_augmentations=transform_augmentations)
 
     # Split dataset into train and test
     real_train_data, real_test_data = data.random_split(dataset_real, [int(len(dataset_real)*0.8), len(dataset_real)-int(len(dataset_real)*0.8)])
@@ -365,7 +368,7 @@ def main():
 
 
     # Define the file path and open the CSV file in append mode and save the results in results folder
-    csv_file_path = f'results/results{args.id}.csv'
+    csv_file_path = f'results/results_{args.id}.csv'
     with open(csv_file_path, 'w', newline='') as csv_file:
         writer = csv.writer(csv_file)
 
@@ -408,7 +411,10 @@ def main():
 
     # Save model to load in c++
     try:
-        torch.jit.save(torch.jit.script(model), f'jit_models/unet_resnet101_{args.id}.pt')
+        x = torch.randn(1,3,128,160)
+        traced_script_module = torch.jit.trace(model, x)
+        traced_script_module.save(f'jit_models/unet_resnet101_{args.id}.pt')
+        # torch.jit.save(torch.jit.script(model), f'jit_models/unet_resnet101_{args.id}.pt')
     except:
         print("Could not save model with jit.")
 

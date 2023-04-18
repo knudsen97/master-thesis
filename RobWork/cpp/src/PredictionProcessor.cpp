@@ -1,6 +1,9 @@
 #include "../inc/PredictionProcessor.hpp"
 
 // ------------------- Constructors and destructor ------------------- 
+/**
+ * @brief Default constructor for PredictionProcessor object.
+*/
 PredictionProcessor::PredictionProcessor()
 {
     std::cout << "Default PredictionProcessor constructor called." << std::endl;
@@ -12,6 +15,10 @@ PredictionProcessor::PredictionProcessor()
                         0, 0, 0, 1;
 }
 
+/**
+ * @brief Constructor for PredictionProcessor object.
+ * @param depth_scale The depth scale to use.
+*/
 PredictionProcessor::PredictionProcessor(double depth_scale) :
     _depth_scale(depth_scale)
 {
@@ -21,22 +28,39 @@ PredictionProcessor::PredictionProcessor(double depth_scale) :
                         0, 0, 0, 1;
 }
 
+/**
+ * @brief Destructor for PredictionProcessor object.
+*/
 PredictionProcessor::~PredictionProcessor(){}
 
 
 // ------------------- Public Methods -------------------
+/**
+ * @brief Set the intrinsics and extrinsics of the used camera.
+ * @param intrinsics The intrinsics.
+ * @param extrinsics The extrinsics.
+*/
 void PredictionProcessor::setIntrinsicsAndExtrinsics(const open3d::camera::PinholeCameraIntrinsic &intrinsics, const Eigen::Matrix4d &extrinsics)
 {
     this->_intrinsics = intrinsics;
     this->_extrinsics = extrinsics;
 }
 
+/**
+ * @brief Set the flip matrix. The point cloud has to be flipped in order to be aligned with the RGB image.
+ * @param flip_mat The flip matrix.
+*/
 void PredictionProcessor::setFlipMatrix(const Eigen::Matrix4d &flip_mat)
 {
     this->_flip_mat = flip_mat;
 }
 
-
+/**
+ * @brief Construct a point cloud from a depth image using Open3d.
+ * @param depth_in The depth image in OpenCV format.
+ * @param pc_out Point cloud to save the constructed point cloud to.
+ * @param flip Whether to flip the point cloud or not.
+*/
 void PredictionProcessor::createPCFromDepth(const cv::Mat &depth_in, PointCloudPtr &pc_out, bool flip)
 {
     open3d::geometry::Image depth_image;
@@ -47,6 +71,13 @@ void PredictionProcessor::createPCFromDepth(const cv::Mat &depth_in, PointCloudP
         pc_out->Transform(this->_flip_mat);
 }
 
+/**
+ * @brief Estimate the normals of a point cloud using Open3d.
+ * @param pc The point cloud.
+ * @param radius The radius to use for the normal estimation.
+ * @param nn_max The maximum number of neighbors to use for the normal estimation.
+ * @param normalize Whether to normalize the normals or not.
+*/
 void PredictionProcessor::estimateAllNormals(PointCloudPtr &pc, double radius, int nn_max, bool normalize)
 {
     const open3d::geometry::KDTreeSearchParamHybrid search_param(radius, nn_max);
@@ -55,6 +86,12 @@ void PredictionProcessor::estimateAllNormals(PointCloudPtr &pc, double radius, i
         pc->NormalizeNormals();
 }
 
+/**
+ * @brief Convert pixel coordinates to camera coordinates.
+ * @param depth The depth image.
+ * @param p The pixel coordinates.
+ * @param p_cam The camera coordinates.
+*/
 void PredictionProcessor::pixel2cam(const cv::Mat &depth, const cv::Point2d &p, cv::Point3d &p_cam)
 {
     auto f = this->_intrinsics.GetFocalLength();
@@ -66,6 +103,12 @@ void PredictionProcessor::pixel2cam(const cv::Mat &depth, const cv::Point2d &p, 
 }
 
 
+/**
+ * @brief Find the index of the closest point in a point cloud to a given point.
+ * @param pc The point cloud.
+ * @param p_cam The point to find the closest point to.
+ * @param flip Whether the point cloud is flipped or not.
+*/
 int PredictionProcessor::findIndexOfClosestPoint(const PointCloudPtr &pc, const cv::Point3d &p_cam, bool flip)
 {
     auto pc_center_3d = open3d::geometry::PointCloud();
@@ -79,7 +122,11 @@ int PredictionProcessor::findIndexOfClosestPoint(const PointCloudPtr &pc, const 
     return min_index;
 }
 
-
+/**
+ * @brief Compute the rotation matrix from a normal vector.
+ * @param normal The normal vector.
+ * @param R The rotation matrix.
+*/
 void PredictionProcessor::computeRotationMatrixFromNormal(const Eigen::Vector3d &normal, cv::Mat &R)
 {
     Eigen::Vector3d u;
@@ -104,18 +151,14 @@ void PredictionProcessor::computeRotationMatrixFromNormal(const Eigen::Vector3d 
     }
 }
 
-void PredictionProcessor::computeCenters(const cv::Mat &image, std::vector<cv::Point2i> &dest, int max_radius)
+/**
+ * @brief Compute centers of connected components in the green channel of an image.
+ * @param image The image to compute the centers from.
+ * @param dest The vector to save the centers to.
+*/
+void PredictionProcessor::computeCenters(const cv::Mat &image, std::vector<cv::Point2i> &dest, int max_radius, int min_radius)
 {
-    int min_radius = 5;
-    // // Convert image to HSV because it is easier to filter colors in the HSV color-space.
-    // cv::Mat hsv;
-    // cv::cvtColor(image, hsv, cv::COLOR_BGR2HSV);
-
-    // // Filter out green pixels
-    // cv::Mat greenOnly;
-    // cv::inRange(hsv, this->_lowerBound, this->_upperBound, greenOnly);
-    
-    /* isolate green channel */ 
+    /* Isolate green channel */ 
     cv::Mat bgr[3];
     cv::split(image, bgr);
     cv::Mat greenOnly = bgr[1];
@@ -163,14 +206,12 @@ void PredictionProcessor::computeCenters(const cv::Mat &image, std::vector<cv::P
 }
 
 
-void PredictionProcessor::setBounds(cv::Scalar lower, cv::Scalar upper)
-{
-    this->_lowerBound = lower;
-    this->_upperBound = upper;
-}
-
-
 // ------------------- Private Methods -------------------
+/**
+ * @brief Convert a cv::Mat to an open3d::geometry::Image.
+ * @param cv_image_in The cv::Mat to convert.
+ * @param o3d_image_out The open3d::geometry::Image to save the converted image to.
+*/
 void PredictionProcessor::cv2o3dImage(const cv::Mat &cv_image_in, open3d::geometry::Image &o3d_image_out)
 {
 // open3d::geometry::Image depth_image;
