@@ -79,7 +79,7 @@
 </Frame>
 
 <!-- inserting objects -->
-<Frame name="CubeReference" refframe="Container">
+<Frame name="PuzzleReference" refframe="Container">
 	 <RPY> 0 0 0 </RPY> <Pos> 0.3 0.1 0.02 </Pos> 
 </Frame>
 <Include file="objects/puzzle/puzzle.xml" />
