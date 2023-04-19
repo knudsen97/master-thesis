@@ -1,72 +1,180 @@
+// Standard C++ includes
 #include <iostream>
 
 // Include OpenCV header file
 #include <opencv2/opencv.hpp>
 
-// Include Intel Realsense Cross Platform API
-#include <librealsense2/rs.hpp>
+// Include Open3D header file
+#include <open3d/Open3D.h>
 
+// Include header files
+#include "../inc/Sensor.hpp"
+#include "../inc/PredictionProcessor.hpp"
+#include "../inc/Inference.hpp"
+
+
+typedef std::shared_ptr<open3d::geometry::PointCloud> PointCloudPtr;
+
+
+void open3d_to_cv(open3d::t::geometry::Image& open3d_image, cv::Mat& cv_image, bool is_color = true)
+{
+    if (is_color)
+    {
+        cv::Mat cv_image_copy(open3d_image.GetRows(), open3d_image.GetCols(),
+                    CV_8UC(open3d_image.GetChannels()),
+                    open3d_image.GetDataPtr());
+        cv::cvtColor(cv_image_copy, cv_image_copy, cv::COLOR_RGB2BGR);
+        cv_image_copy.copyTo(cv_image);
+    }
+    else
+    {
+        cv::Mat cv_image_copy(open3d_image.GetRows(), open3d_image.GetCols(),
+                    CV_16UC(open3d_image.GetChannels()),
+                    open3d_image.GetDataPtr());
+        cv_image_copy.copyTo(cv_image);
+    }
+}
 
 
 int main(int argc, char* argv[])
 {
-    // Declare RealSense pipeline, encapsulating the actual device and sensors
-    rs2::pipeline pipe;
-
-    // Create a configuration for configuring the pipeline with a non default profile
-    rs2::config cfg; 
-    cfg.enable_stream(RS2_STREAM_COLOR, 640, 480, RS2_FORMAT_BGR8, 30);
-    cfg.enable_stream(RS2_STREAM_DEPTH, 640, 480, RS2_FORMAT_Z16, 30);
-
-    // Start streaming with default configuration
-    pipe.start(cfg);
-
-    // Load the intrinsic parameters of the camera
-    rs2::pipeline_profile profile = pipe.get_active_profile();
-    rs2::video_stream_profile depth_stream = profile.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>();
-    rs2_intrinsics intrinsics = depth_stream.get_intrinsics();
-
-    // Get the camera's field of view
-    double fovy = 2 * atan2(intrinsics.height, 2 * intrinsics.fx) * 180 / M_PI;
-
-    std::cout << "Camera's field of view: " << fovy << std::endl;
-
-
-    while (cv::waitKey(1) < 0)
+    // Check if the camera is connected
+    if (!open3d::t::io::RealSenseSensor::ListDevices())
     {
-        // Wait for the next set of frames from the camera
-        auto frames = pipe.wait_for_frames();
-
-        // Get the depth and color frames
-        auto depth_frame = frames.get_depth_frame();
-        auto color_frame = frames.get_color_frame();
-
-        auto height = depth_frame.get_height();
-        auto width = depth_frame.get_width();
-
-        // Convert the depth frame to a grayscale image
-        cv::Mat depth_image(cv::Size(width, height), CV_16UC1, (void*)depth_frame.get_data(), cv::Mat::AUTO_STEP);
-        cv::Mat image(cv::Size(width, height), CV_8UC3, (void*)color_frame.get_data(), cv::Mat::AUTO_STEP);
-
-        // Get the depth frame's dimensions
-        double fovy_pixel = height / 2 / tan (fovy * (2 * M_PI) / 360.0 / 2.0);
-
-        std::cout << "Camera's field of view: " << fovy_pixel << "\r";
-
-
-
-        // Show the depth image
-        cv::imshow("Depth Image", depth_image);
-        cv::imshow("Image", image);
-
+        std::cout << "No camera detected" << std::endl;
+        return 0;
     }
 
-    // Stop streaming
-    pipe.stop();
+    std::string model_file_name = "unet_resnet101_1_jit.pt";
+    std::string model_name;
 
+    for (size_t i = 0; i < argc; i++)
+    {
+        if (std::string(argv[i]) == "--model")
+        {
+            model_file_name = argv[i + 1];
+        }
+        else if (std::string(argv[i]) == "--model_name")
+        {
+            model_name = argv[i + 1];
+        }
+    }
+    if (model_name.empty())
+    {
+        model_name = model_file_name.substr(0, model_file_name.size() - 7);
+    }
+
+    // Load camera configuration into a Sensor object
+    const std::string config_filename = "../config/camera_config.json";
+    Sensor sensor(config_filename);
+
+    // Create intrinsics and extrinsics matrices
+    Eigen::Matrix4d extrinsics = Eigen::Matrix4d::Identity();
+    cv::Mat intrinsics;
+    open3d::camera::PinholeCameraIntrinsic camera_intrinsics;
+
+    // Set intrinsics and extrinsics
+    sensor.setIntrinsics(50.0);
+    sensor.setExtrinsics(extrinsics);
+
+    // Create flip matrix to flip the point cloud
+    Eigen::Matrix4d flip_mat;
+    flip_mat << 1, 0, 0, 0,
+                0, -1, 0, 0,
+                0, 0, -1, 0,
+                0, 0, 0, 1;
+    
+    // Create PredictionProcessor object
+    double depth_scale = 1e4;
+    PredictionProcessor processor(depth_scale);
+
+    cv::Mat image, pred_image, depth;
+    cv::Mat returned_image;
+    bool inference_sucess;
+    Inference inf("../../models/" + model_file_name);
+
+    // Start capture
+    sensor.startCapture();
+
+    while(true)
+    {
+        auto key = cv::waitKey(1);
+
+        // Grab frame
+        open3d::t::geometry::Image open3d_image, open3d_depth;
+        sensor.grabFrame(open3d_image, open3d_depth);
+
+        // Convert Open3D image to OpenCV image
+        open3d_to_cv(open3d_image, image, true);
+        open3d_to_cv(open3d_depth, depth, false);
+
+        // Create point cloud
+        auto open3d_depth_legacy = open3d_depth.ToLegacy();
+        sensor.createPinholeCameraIntrinsics(camera_intrinsics);
+        sensor.getExtrinsics(extrinsics);
+        int depth_scale = 1000;
+        PointCloudPtr pc;
+        pc = open3d::geometry::PointCloud::CreateFromDepthImage(open3d_depth_legacy, camera_intrinsics, extrinsics, depth_scale);
+        pc->Transform(flip_mat);
+
+        // Do prediction
+        if (key == 'k')
+        {
+            image.copyTo(pred_image);
+            auto time_start = std::chrono::high_resolution_clock::now();
+            inference_sucess = inf.predict(pred_image, returned_image);
+            auto time_end = std::chrono::high_resolution_clock::now();
+            std::cout << "Time taken: " << std::chrono::duration_cast<std::chrono::milliseconds>(time_end - time_start).count() << " ms" << std::endl;
+    
+            cv::Point center = cv::Point(400, 200);
+            std::vector<cv::Point> centers;
+            processor.computeCenters(returned_image, centers, 10000);
+
+            if (centers.size() > 0)
+            {
+                center = centers[0];
+                for (auto c : centers)
+                    std::cout << "center: " << c << std::endl;
+                cv::circle(pred_image, center, 5, cv::Scalar(0, 0, 255), -1);
+                cv::circle(returned_image, center, 5, cv::Scalar(0, 0, 0), -1);
+            }
+            else
+            {
+                std::cout << "No graspable areas found" << std::endl;
+            }
+
+            if (inference_sucess)
+            {
+                std::cout << "Inference success" << std::endl;
+                cv::imshow("Image", pred_image);
+                cv::imshow("Prediction", returned_image);
+            }
+            else
+                std::cout << "Inference failure" << std::endl;
+        }
+        
+        //
+
+        // Visualization
+        cv::imshow("color", image);
+        cv::imshow("depth", depth);
+
+        // If you want to create point cloud press 'p' or close the program with 'q' or 'esc'
+        if (key == 'p')
+        {
+            auto resolution = sensor.getResolution();
+            open3d::visualization::VisualizerWithKeyCallback o3d_vis;
+            o3d_vis.CreateVisualizerWindow("PointCloud", resolution.first, resolution.second);
+            o3d_vis.AddGeometry(pc);
+            o3d_vis.Run();
+        }
+        else if (key == 'q' || key == 27)
+        {
+            break;
+        }
+    }
+
+    sensor.stopCapture();
+  
     return 0;
 }
-
-
-        // depth_frame depth = frames.get_depth_frame();
-        // Mat depthImage(Size(depth.get_width(), depth.get_height()), CV_16UC1, (void*)depth.get_data(), Mat::AUTO_STEP);
