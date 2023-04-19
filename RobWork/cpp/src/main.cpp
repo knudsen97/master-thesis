@@ -22,7 +22,10 @@
 #include <rw/models/SerialDevice.hpp>
 #include <rw/proximity/CollisionDetector.hpp>
 #include <rw/proximity/CollisionStrategy.hpp>
-#include <rw/kinematics/FKRange.hpp>
+#include <rw/geometry/Sphere.hpp>
+#include <rw/kinematics/Frame.hpp>
+#include <rw/kinematics/FixedFrame.hpp>
+#include <rw/kinematics/MovableFrame.hpp>
 
 #include <rwlibs/simulation/GLFrameGrabber.hpp>
 #include <rwlibs/simulation/GLFrameGrabber25D.hpp>
@@ -62,96 +65,131 @@ using namespace rws;
 #include "../inc/InverseKinematics.hpp"
 
 /**
- * @brief Convert a cv::Mat to a rw::math::Transform3D<double>.
- * @param cv_mat The cv::Mat to convert.
- * @param transform The rw::math::Transform3D<double> to convert to.
- * @return True if the conversion was successful, false otherwise.
+ * @brief Check if a string is in a vector of strings.
+ * @param str The string to check.
+ * @param strVector The vector of strings to check against.
+ * @return True if the string is in the vector, false otherwise.
 */
-bool cvMat_2_robworkTransform(cv::Mat& cv_mat, rw::math::Transform3D<double>& transform)
+bool stringInVector(std::string str, std::vector<std::string> strVector)
 {
-    if (cv_mat.empty())
+    for (auto& s : strVector)
+    {
+        if (str.find(s) != std::string::npos)
         {
-            std::cout << "cv_mat is empty" << std::endl;
-            return false;
-        }
-    if (cv_mat.channels() != 1)
-    {
-        std::cout << "cv_mat is not a 1-channel image" << std::endl;
-        return false;
-    }
-    if (cv_mat.rows != 4 || cv_mat.cols != 4)
-    {
-        std::cout << "cv_mat is not a 4x4 matrix" << std::endl;
-        return false;
-    }
-
-    rw::math::Rotation3D<double> rot = rw::math::RPY<double>(0, 0, 0).toRotation3D();
-    rw::math::Vector3D<double> pos = rw::math::Vector3D<double>(0, 0, 0);
-    double cv_debug;
-
-    // std::cout << "cv_mat: \n" << cv_mat << std::endl;
-    for (int i = 0; i < cv_mat.rows; i++)
-    {
-        for (int j = 0; j < cv_mat.cols; j++)
-        {  
-            if (i < 3 && j < 3)
-            {
-                cv_debug = cv_mat.at<double>(i, j);
-                rot(i, j) = cv_debug;
-            }
-            else if (i < 3 && j == 3)
-            {
-                cv_debug = cv_mat.at<double>(i, j);
-                pos(i) = cv_debug;
-            }
+            return true;
         }
     }
-    transform = rw::math::Transform3D<double>(pos, rot);
-    return true;
+    return false;
 }
 
 /**
  * @brief Evaluate the prediction based on blob.
- * @param blobPredictionCenter The center of the predicted blobs.
- * @param groundTruth The ground truth image.
- * @return The result of the evaluation. Will be filled with the number of true positives and false positives in that order.
+ * @param blobPredictionCenters The predicted centers of the blobs.
+ * @param wc The workcell.
+ * @return The result of the evaluation. Will be filled with the number of true positives, false positives and false negative in that order.
 */
-std::vector<int> evaluateBlobCount(std::vector<cv::Point> blobPredictionCenter, const WorkCell::Ptr wc)
+std::vector<int> evaluateBlobCount(std::vector<rw::math::Vector3D<double>> blobPredictionCenters, const WorkCell::Ptr wc)
 {
-    std::vector<int> result(2);
-    std::vector<std::string> objectNames;
-    std::vector<Frame*> objectFrames;
-    std::vector<rw::models::SerialDevice::Ptr> objDevices;
+    std::vector<int> result(3);
     int truePositives = 0;
     int falsePositives = 0;
+    int falseNegatives = 0;
     std::string filePath = wc->getFilePath();
 
+    //get what object is in the scene
     std::string objPath = filePath.substr(0, filePath.find_last_of("/")) + "/objects";
-    
+    std::vector<std::string> bodyNames;
+    std::string frameName, objectName, bodyName;
     for (auto& p: boost::filesystem::directory_iterator(objPath))
     {
-        objectNames.push_back(p.path().filename().string());
+        objectName = p.path().filename().string();
+        frameName = objectName;
+        frameName[0] = std::toupper(frameName[0]);
+        frameName = frameName + "Reference";
+        // find object in scene
+        if (wc->findFrame(frameName) != nullptr)
+        {
+            std::cout << "found object: " << objectName << std::endl;
+            bodyNames.push_back(objectName + ".Base"); //add .Base to the name to match the frame name in workcell
+        }
     }
-
-    //get object devices
-    for (auto& objName : objectNames)
+    rw::kinematics::MovableFrame::Ptr predPointMovableFrame = wc->findFrame<rw::kinematics::MovableFrame>("PredPoint");
+    if (predPointMovableFrame == nullptr)
     {
-        std::string objDeviceName = objName;
-        //change first letter to upper case
-        objDeviceName[0] = std::toupper(objDeviceName[0]);
-        auto device = wc->findDevice<rw::models::SerialDevice>(objDeviceName);
-        objDevices.push_back(device);
+        std::cerr << "PredPoint frame not found" << std::endl;
+        return result;
+    }
+    
+    // Create collision detector
+    auto collisionStrategy = rwlibs::proximitystrategies::ProximityStrategyYaobi::make();
+    auto collisionDetector = rw::common::ownedPtr(new rw::proximity::CollisionDetector(wc, collisionStrategy));
+    rw::proximity::CollisionDetector::QueryResult* data = new rw::proximity::CollisionDetector::QueryResult;
 
-
-        rw::models::CollisionDetector::Ptr detector = wc->getCollisionDetector();
-
+    // check if there are collision in default state
+    rw::kinematics::State stateCopy = wc->getDefaultState().clone(); // no need to reset since we only move 1 object
+    if (collisionDetector->inCollision(stateCopy))
+    {
+        std::cerr << "Collision in default state" << std::endl;
+        return result;
     }
 
+    // move prediction point and find colliding objects
+    rw::math::RPY<double> rpy(0, 0, 0);
+    std::set<std::string> collisionSet;
+    for (auto blobPredictionCenter : blobPredictionCenters)
+    {
+        // move predPointFrame to predicted location
+        rw::math::Transform3D<double> predPointTransform = rw::math::Transform3D<double>(blobPredictionCenter, rpy.toRotation3D());
+        predPointMovableFrame->moveTo(predPointTransform, stateCopy);
 
+        // check for collision
+        collisionDetector->inCollision(stateCopy, data, false);
+        auto collidingFrames = data->getFramePairVector();
+        // std::cout << "Looking for collision at point: " << blobPredictionCenter << std::endl;
+        // We only expect one collision so we have breaks in the loop
+        for (auto& framePair : collidingFrames)
+        {
+            std::cout << "colliding framePair: " << framePair.first->getName() << " " << framePair.second->getName() << "\tat point: " << blobPredictionCenter << std::endl;
+            // get object name from pair
+            if(stringInVector(framePair.first->getName(), bodyNames))
+            {
+                bodyName = framePair.first->getName();
+            }
+            else if(stringInVector(framePair.second->getName(), bodyNames))
+            {
+                bodyName = framePair.second->getName();
+            }
+            else
+            {
+                falsePositives++;
+                break;
+            }
+            // check if object name exists in collision set
+            if (collisionSet.find(bodyName) == collisionSet.end())
+            {
+                collisionSet.insert(bodyName);
+                truePositives++;
+            }
+            else
+            {
+                falsePositives++;
+            }
+            break;
+        }
+    }
+    // check if predictino missed any objects
+    for (auto name : bodyNames)
+    {
+        if (collisionSet.find(name) == collisionSet.end())
+        {
+            falseNegatives++;
+        }
+    }
 
-
+    delete data;
     result[0] = truePositives;
     result[1] = falsePositives;
+    result[2] = falseNegatives;
     return result;
 }
 
@@ -185,7 +223,7 @@ int main(int argc, char** argv)
         folder_name = file_name;
     }
         
-
+    std::cout << "using model: " << model_name << std::endl;
     // Load workcell
     std::string wcFile = "../../Project_WorkCell/Scene.wc.xml";
 
@@ -297,7 +335,7 @@ int main(int argc, char** argv)
         RealSense.getPointCloudAndDepthImage(pc, depth);
 
         // Add random noise to depth image 
-        RealSense.addDepthNoise(depth, 0.0, 0.1, 100);
+        // RealSense.addDepthNoise(depth, 0.0, 0.1, 100);
 
         // Create PredictionProcessor object
         double depth_scale = 1e4;
@@ -329,6 +367,7 @@ int main(int argc, char** argv)
         processor.createPCFromDepth(depth, pc_new, flip);
 
         // Draw circle in middle of image
+        std::cout << "---- finding centroids ----" << std::endl;
         cv::Point center = cv::Point(400, 200);
         std::vector<cv::Point> centers;
         processor.computeCenters(returned_image, centers, 10000);
@@ -337,12 +376,16 @@ int main(int argc, char** argv)
         Eigen::Vector3d normal;
         Eigen::Vector3d point_3d;
         cv::Point3d center_3d;
-        cv::Mat T_obj_cam;
+        std::vector<cv::Point3d> centers_3d;
+        std::vector<rw::math::Vector3D<double>> centers_3d_rw;
+        rw::math::Transform3D<double> T_obj_cam;
+        std::vector<rw::math::Transform3D<double>> T_obj_cam_vec;
+        std::vector<int> tp_fp;
         if (estimateNormal)
         {
-            center = centers[0];
-            std::vector<int> tp_fp;
-            tp_fp = evaluateBlobCount(centers, wc);
+            std::cout << "---- Estimate normals ----" << std::endl;
+            int centerIndex = 0;
+            center = centers[centerIndex];
             // center = centers[centers.size()-1];
             for (auto c : centers)
                 std::cout << "center: " << c << std::endl;
@@ -353,8 +396,15 @@ int main(int argc, char** argv)
             processor.estimateAllNormals(pc_new, 0.05, 30, true);
 
             // Convert pixel to 3d point
-            
+            for (auto c : centers)
+            {
+                processor.pixel2cam(depth, c, center_3d);
+                centers_3d.push_back(center_3d);
+                centers_3d_rw.push_back(rw::math::Vector3D<double>(center_3d.x, center_3d.y, center_3d.z));
+            }
             processor.pixel2cam(depth, center, center_3d);
+            center_3d = centers_3d[centerIndex];
+            rw::math::Vector3D<double> center_rw = centers_3d_rw[centerIndex];
 
             // Find index of closest point in point cloud to 3d center point
             int min_index = processor.findIndexOfClosestPoint(pc_new, center_3d, flip);
@@ -368,24 +418,28 @@ int main(int argc, char** argv)
             if (normal(2) < 0)
                 normal = -normal;
 
-            cv::Mat R_obj_cam;
-            processor.computeRotationMatrixFromNormal(normal, R_obj_cam);
-            // std::cout << "R_obj_cam: \n" << R_obj_cam << std::endl;
-            
-            // manual flipping for test
-            center_3d.x = -center_3d.x;
-            center_3d.z = -center_3d.z;
+            // Manual flipping
+            for (auto& c : centers_3d_rw)
+            {
+                c(0) = -c(0);
+                c(1) = c(1);
+                c(2) = -c(2);
+            }
+            center_rw(0) = -center_rw(0);
+            center_rw(1) = center_rw(1);
+            center_rw(2) = -center_rw(2);
 
-            // Create transformation matrix of object in camera frame
-            cv::hconcat(R_obj_cam, cv::Mat(center_3d), T_obj_cam);
-            cv::vconcat(T_obj_cam, cv::Mat::zeros(1, 4, CV_64F), T_obj_cam);
-            T_obj_cam.at<double>(3, 3) = 1;
+            // Calculating transformation            
+            rw::math::Rotation3D R_obj_cam;
+            processor.computeRotationMatrixFromNormal(normal, R_obj_cam);
+            T_obj_cam = rw::math::Transform3D<double>(center_rw, R_obj_cam);
         }
         else
         {
             std::cout << "No blob found" << std::endl;
         }
 
+        // tp_fp = evaluateBlobCount(centers_3d, wc);
 
         // ------------------------------------------------------
         // ------------- Visualization --------------------------
@@ -435,15 +489,7 @@ int main(int argc, char** argv)
         }
 
         // transform from world to object
-        rw::math::Transform3D<> frameObjTCam;
-        bool transSuccess = cvMat_2_robworkTransform(T_obj_cam, frameObjTCam);
-        if (!transSuccess)
-        {
-            std::cerr << "Could not convert transformation matrix" << std::endl;
-            RealSense.close();
-            app.close();
-            return -1;
-        }
+        rw::math::Transform3D<> frameObjTCam = T_obj_cam;
         
         // lets pretend that obj->cam is actually cam->obj (if this does not work, use the above code)
         rw::math::Transform3D<> frameCamTObj = frameObjTCam;
@@ -452,6 +498,18 @@ int main(int argc, char** argv)
         rw::math::Transform3D<> frameWorldTCam = camTransform;
         rw::math::Transform3D<> frameWorldTObj = frameWorldTCam * frameCamTObj;
 
+        for (auto& c : centers_3d_rw)
+        {
+            c = frameWorldTCam * c;
+        }
+        std::vector<int> evalResults;
+        std::cout << "---- Evaluating blob count ----" << std::endl;
+        evalResults = evaluateBlobCount(centers_3d_rw, wc);
+        std::cout << "True positives: " << evalResults[0] << std::endl;
+        std::cout << "False positives: " << evalResults[1] << std::endl;
+        std::cout << "False negatives: " << evalResults[2] << std::endl;
+
+        std::cout << "---- inverse kinematics ----" << std::endl;
         InverseKinematics solver(UR5, wc);
         // double angle_step = 0.1; // increment in roll angle
         // double start = -M_PI;
@@ -468,9 +526,7 @@ int main(int argc, char** argv)
 
         std::cout << "Number of collision free solutions: " << collisionFreeSolution.size() << std::endl;
 
-        // Create path player
-        rw::loaders::PathLoader::storeTimedStatePath(*wc, collisionFree, "../../Project_WorkCell/collision_free.rwplay");
-
+        //finding the solution with the shortest distance to the start
         rw::math::Q Qstart = UR5->getQ(state);
         rw::math::QMetric::Ptr metric = rw::math::MetricFactory::makeEuclidean<rw::math::Q>();
         rw::math::Q Qgoal = collisionFreeSolution[0];
@@ -479,7 +535,7 @@ int main(int argc, char** argv)
         for (auto q : collisionFreeSolution)
         {
             calculatedDistance = metric->distance(Qstart, q);
-            if (calculatedDistance > distance)
+            if (calculatedDistance < distance)
             {
                 distance = calculatedDistance;
                 Qgoal = q;
