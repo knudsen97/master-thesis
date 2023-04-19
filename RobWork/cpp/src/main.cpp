@@ -195,7 +195,7 @@ std::vector<int> evaluateBlobCount(std::vector<rw::math::Vector3D<double>> blobP
 
 int main(int argc, char** argv)
 {
-    std::string model_name = "unet_resnet101_1_jit.pt";
+    std::string model_name = "unet_resnet101_10_l2_e-5_scse_synthetic_data_4000_jit.pt";
     std::string file_name;
     std::string folder_name;
 
@@ -326,7 +326,12 @@ int main(int argc, char** argv)
             // cv::waitKey(0);
         }
         else
-            std::cout << "Inference failure" << std::endl;
+        {
+            std::cerr << "Inference failure" << std::endl;
+            RealSense.close();
+            app.close();
+            return -1;
+        }
         
         // Get depth image and point cloud
         PointCloudPtr pc; // This is actually not really used for anything atm. Dont think it is needed?
