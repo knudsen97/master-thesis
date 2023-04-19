@@ -16,7 +16,13 @@ models=( \
 # "unet_resnet101_10_adamax_jit.pt" \
 # "unet_resnet101_10_l2_e-3_jit.pt" \
 # "unet_resnet101_10_l2_e-4_jit.pt" \
-"unet_resnet101_10_l2_e-5_jit.pt" \
+# "unet_resnet101_10_l2_e-5_jit.pt" \
+# "unet_resnet101_10_synthetic_1000_jit.pt" \
+# "unet_resnet101_10_synthetic_2000_jit.pt" \
+# "unet_resnet101_10_synthetic_3000_jit.pt" \
+# "unet_resnet101_10_synthetic_4000_jit.pt" \
+# "unet_resnet101_10_l2_e-5_scse_jit.pt" \
+"unet_resnet101_10_l2_e-5_scse_synthetic_data_4000_jit.pt" \
 )
 
 #define model names
@@ -35,7 +41,13 @@ file_names=( \
 # "10_adamax" \
 # "10_l2_e-3" \
 # "10_l2_e-4" \
-"10_l2_e-5" \
+# "10_l2_e-5" \
+# "10_synthetic_1000" \
+# "10_synthetic_2000" \
+# "10_synthetic_3000" \
+# "10_synthetic_4000" \
+# "10_l2_e-5_scse" \
+"10_l2_e-5_scse_synthetic_data_4000" \
 )
 
 folder_names=( \
@@ -53,7 +65,13 @@ folder_names=( \
 # "10_adamax" \
 # "10_l2_e-3" \
 # "10_l2_e-4" \
-"10_l2_e-5" \
+# "10_l2_e-5" \
+# "10_synthetic_1000" \
+# "10_synthetic_2000" \
+# "10_synthetic_3000" \
+# "10_synthetic_4000" \
+# "10_l2_e-5_scse" \
+"10_l2_e-5_scse_synthetic_data_4000" \
 )
 
 #define workcells
