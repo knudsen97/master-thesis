@@ -10,6 +10,9 @@
 #include <opencv2/calib3d.hpp>
 #include <opencv2/imgproc.hpp>
 
+//include RobWork headers
+#include <rw/math.hpp>
+
 typedef std::shared_ptr<open3d::geometry::PointCloud> PointCloudPtr;
 
 class PredictionProcessor
@@ -35,8 +38,8 @@ public:
     void pixel2cam(const cv::Mat &depth, const cv::Point2d &p, cv::Point3d &p_cam);
     int findIndexOfClosestPoint(const PointCloudPtr &pc, const cv::Point3d &p_cam, bool flip=true);
 
-    void computeRotationMatrixFromNormal(const Eigen::Vector3d &normal, cv::Mat &R);
-    void computeCenters(const cv::Mat &image, std::vector<cv::Point2i> &dest, int max_radius=10000, int min_radius = 100);
+    void computeRotationMatrixFromNormal(const Eigen::Vector3d &normal, rw::math::Rotation3D<double> &R);
+    void computeCenters(const cv::Mat &image, std::vector<cv::Point2i> &dest, int max_radius=10000, int min_radius = 0);
 
 
 private:
