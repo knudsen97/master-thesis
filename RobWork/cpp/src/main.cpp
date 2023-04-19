@@ -218,7 +218,7 @@ int main(int argc, char** argv)
         // Get image data
         RealSense.acquireImage(state, info);
         RealSense.getImage(image, ImageType::BGR);  
-        Inference::change_image_color(image, cv::Vec3b({255, 255, 255}), cv::Vec3b({40,90,120}));
+        // Inference::change_image_color(image, cv::Vec3b({255, 255, 255}), cv::Vec3b({40,90,120}));
         Inference inf("../../../models/" + model_file_name);
         auto time_start = std::chrono::high_resolution_clock::now();
         inference_sucess = inf.predict(image, returned_image);
