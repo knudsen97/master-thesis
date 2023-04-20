@@ -335,6 +335,7 @@ int main(int argc, char** argv)
         std::string image_file_name = "../images/" + model_name + "_image.png";
         std::string returned_image_file_name = "../images/" + model_name + "_returned_image.png";
         std::string point_cloud_file_name = "../images/" + model_name + "_point_cloud.png";
+        // std::string depth_image_file_name = "../images/" + model_name + "_depth_image.png";
 
         // Visualize image and point cloud
         cv::imshow("Image", image);
@@ -342,6 +343,8 @@ int main(int argc, char** argv)
         cv::imshow("Inference", returned_image);
         cv::imwrite(image_file_name, image);
         cv::imwrite(returned_image_file_name, returned_image);
+        // cv::imwrite(depth_image_file_name, depth);
+
         open3d::visualization::VisualizerWithKeyCallback o3d_vis;
         o3d_vis.CreateVisualizerWindow("PointCloud", width, height);
         o3d_vis.AddGeometry(pc_new);
