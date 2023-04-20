@@ -20,6 +20,9 @@ set(RobWork_DIR ${RW_ROOT}/cmake)
 find_package(RobWork REQUIRED)
 message("-- RobWork found: " ${RW_ROOT})
 
+# Find UR library
+find_package(ur_client_library REQUIRED)
+
 
 # Include all local header and source files
 file(GLOB SOURCES
@@ -36,7 +39,8 @@ set(USER_LIBRARIES
   Open3D::Open3D
   ${OpenCV_LIBS} 
   ${ROBWORK_LIBRARIES}
-  # ${REALSENSE2_FOUND}
+  # ${REALSENSE2_FOUND} 
+  ur_client_library::urcl
   )
 
 set(USER_INCLUDE_DIRS
