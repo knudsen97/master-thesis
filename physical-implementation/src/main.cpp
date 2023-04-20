@@ -91,7 +91,7 @@ int main(int argc, char* argv[])
     cv::Mat image, pred_image, depth;
     cv::Mat returned_image;
     bool inference_sucess;
-    Inference inf("../../models/" + model_file_name);
+    Inference inf("../../jit_models/" + model_file_name);
 
     // Start capture
     sensor.startCapture();
