@@ -1,12 +1,12 @@
 #include "../inc/InverseKinematics.hpp"
 
 
-InverseKinematics::InverseKinematics(rw::models::SerialDevice::Ptr device, rw::core::Ptr<rw::models::WorkCell> wc)
+InverseKinematics::InverseKinematics(rw::models::SerialDevice::Ptr device, rw::core::Ptr<rw::models::WorkCell> wc, rw::kinematics::State state)
 {
     // Set robot and workcell
     this->workCell_ = wc;
     this->robot_ = device;
-    this->state_ = this->workCell_->getDefaultState();
+    this->state_ = state;
 
     // Create inverse kinematics solver
     this->solver_ = rw::common::ownedPtr(new rw::invkin::ClosedFormIKSolverUR(this->robot_, this->state_));
@@ -33,12 +33,13 @@ bool InverseKinematics::solve(rw::math::Transform3D<> WorldTTarget, double rollS
     rw::math::Transform3D<> frameTcpTRobotTcp = rw::kinematics::Kinematics::frameTframe(frameTcp, frameRobotTcp, this->state_);    
     rw::math::Transform3D<> frameBaseTGoal = rw::math::Transform3Dd::invMult(frameWorldTBase, WorldTTarget);
 
-    if (rollStart != 0 && rollEnd == invalid)
+    if (rollEnd == invalid)
         rollEnd = rollStart;
 
-    double timeColFree = 0.0;
     auto state_copy = this->state_.clone(); 
+    double timeColFree = 0.0;
     bool solutionFound = false;
+    double timeCol = 0.0;
 
     // Solve inverse kinematics
     for (double rollAngle = rollStart; rollAngle <= rollEnd; rollAngle += step)
@@ -63,6 +64,11 @@ bool InverseKinematics::solve(rw::math::Transform3D<> WorldTTarget, double rollS
                 this->collisionFreeSolutions_.push_back(q);
                 this->collisionFreeStates_.push_back(rw::trajectory::TimedState(timeColFree, state_copy));
                 timeColFree += 0.1;
+            }
+            else
+            {
+                this->collisionStates_.push_back(rw::trajectory::TimedState(timeCol, state_copy));
+                timeCol += 0.1;
             }
         }
     }

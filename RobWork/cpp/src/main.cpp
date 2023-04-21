@@ -39,6 +39,10 @@
 #include <rw/pathplanning/PlannerConstraint.hpp>
 #include <rw/trajectory.hpp>
 
+// include rtde
+#include <ur_rtde/rtde_receive_interface.h>
+#include <ur_rtde/rtde_control_interface.h>
+
 using namespace rw::core;
 using namespace rw::common;
 using rw::graphics::SceneViewer;
@@ -63,6 +67,7 @@ using namespace rws;
 #include "../inc/PredictionProcessor.hpp"
 #include "../inc/Inference.hpp"
 #include "../inc/InverseKinematics.hpp"
+#include "../inc/MotionPlanning.hpp"
 
 /**
  * @brief Check if a string is in a vector of strings.
@@ -194,7 +199,8 @@ std::vector<int> evaluateBlobCount(std::vector<rw::math::Vector3D<double>> blobP
 }
 
 int main(int argc, char** argv)
-{
+{ 
+    // Parse command line arguments
     std::string model_name = "unet_resnet101_10_l2_e-5_scse_synthetic_data_4000_jit.pt";
     std::string file_name;
     std::string folder_name;
@@ -224,6 +230,19 @@ int main(int argc, char** argv)
     }
         
     std::cout << "using model: " << model_name << std::endl;
+
+    // Connecting to UR
+    std::string ip = "172.17.0.2";
+    std::cout << "connecting to UR" << std::endl;
+    ur_rtde::RTDEControlInterface UR5_control(ip);
+    if (!UR5_control.isConnected())
+    {
+        std::cerr << "Failed to connect to UR5" << std::endl;
+        return -1;
+    }
+    std::cout << "connected" << std::endl;
+    // UR5_control.moveJ({0,0,0,0,0,0}, 0.1, 0.1); //homing the robot
+
     // Load workcell
     std::string wcFile = "../../Project_WorkCell/Scene.wc.xml";
 
@@ -292,6 +311,9 @@ int main(int argc, char** argv)
         static const double DT = 0.001;
         const Simulator::UpdateInfo info(DT);
         State state = wc->getDefaultState();
+        //set state of simulation robot to state of the robot
+        std::vector<double> UR5_acual_joint = UR5_control.getActualJointPositionsHistory();
+        UR5->setQ(UR5_acual_joint, state);
 
         // Get camera extrinsics from camera frame
         cv::Mat R = cv::Mat::zeros(3, 3, CV_64F);
@@ -330,6 +352,7 @@ int main(int argc, char** argv)
             std::cerr << "Inference failure" << std::endl;
             RealSense.close();
             app.close();
+            UR5_control.disconnect();
             return -1;
         }
         
@@ -490,6 +513,7 @@ int main(int argc, char** argv)
             std::cerr << "Invalid point found by inference" << std::endl;
             RealSense.close();
             app.close();
+            UR5_control.disconnect();
             return -1;
         }
 
@@ -503,6 +527,7 @@ int main(int argc, char** argv)
         rw::math::Transform3D<> frameWorldTCam = camTransform;
         rw::math::Transform3D<> frameWorldTObj = frameWorldTCam * frameCamTObj;
 
+
         for (auto& c : centers_3d_rw)
         {
             c = frameWorldTCam * c;
@@ -515,89 +540,35 @@ int main(int argc, char** argv)
         std::cout << "False negatives: " << evalResults[2] << std::endl;
 
         std::cout << "---- inverse kinematics ----" << std::endl;
-        InverseKinematics solver(UR5, wc);
-        // double angle_step = 0.1; // increment in roll angle
-        // double start = -M_PI;
-        // double end = M_PI;
-        if (!solver.solve(frameWorldTObj, M_PI/2))
+        InverseKinematics IKsolver(UR5, wc, state);
+        double angle_step = 0.1; // increment in roll angle
+        double start = -M_PI;
+        double end = M_PI;
+        if (!IKsolver.solve(frameWorldTObj, M_PI/2))
         {
-            std::cerr << "No solution found for inverse kinematics" << std::endl;
+            std::cerr << "No solution found for inverse kinematics goal" << std::endl;
             RealSense.close();
             app.close();
+            UR5_control.disconnect();
             return -1;
         }
-        std::vector<rw::math::Q> collisionFreeSolution = solver.getSolutions();
-        auto collisionFree = solver.getReplay();
+        std::vector<rw::math::Q> collisionFreeSolution = IKsolver.getSolutions();
+        auto collisionFree = IKsolver.getReplay();
 
-        std::cout << "Number of collision free solutions: " << collisionFreeSolution.size() << std::endl;
 
-        //finding the solution with the shortest distance to the start
+        /* begin motion planning */
+        MotionPlanning MPsolver(UR5, wc, state);
         rw::math::Q Qstart = UR5->getQ(state);
-        rw::math::QMetric::Ptr metric = rw::math::MetricFactory::makeEuclidean<rw::math::Q>();
-        rw::math::Q Qgoal = collisionFreeSolution[0];
-        double distance = metric->distance(Qstart, Qgoal);
-        double calculatedDistance = 0;
-        for (auto q : collisionFreeSolution)
-        {
-            calculatedDistance = metric->distance(Qstart, q);
-            if (calculatedDistance < distance)
-            {
-                distance = calculatedDistance;
-                Qgoal = q;
-            }
-        }
-
-        // Create collision detector
-        rw::proximity::CollisionStrategy::Ptr collisionStrategy = rwlibs::proximitystrategies::ProximityStrategyYaobi::make();
-        rw::proximity::CollisionDetector::Ptr collisionDetector = rw::common::ownedPtr(new rw::proximity::CollisionDetector(wc, collisionStrategy));
-
-        // Initialize planner
-        rw::pathplanning::QConstraint::Ptr Qconstraint = rw::pathplanning::QConstraint::make(collisionDetector, UR5, wc->getDefaultState());
-        rw::pathplanning::PlannerConstraint plannerConstraint = rw::pathplanning::PlannerConstraint::make(collisionDetector, UR5, state);
-        rw::pathplanning::QSampler::QSampler::Ptr sampler = rw::pathplanning::QSampler::QSampler::makeConstrained(
-            rw::pathplanning::QSampler::QSampler::makeUniform(UR5), plannerConstraint.getQConstraintPtr()
-        );
-        rw::pathplanning::QEdgeConstraint::Ptr edgeContrain = rw::pathplanning::QEdgeConstraint::make(Qconstraint.get(), metric, 0.1);
-        double step_size = 0.1;
-        rw::pathplanning::QToQPlanner::Ptr planner = rwlibs::pathplanners::RRTPlanner::makeQToQPlanner(
-            plannerConstraint, 
-            sampler, 
-            metric, 
-            step_size, 
-            rwlibs::pathplanners::RRTPlanner::RRTConnect
-        );
+        rw::math::Q Qtarget = MPsolver.getShortestSolutionFromQToQVec(Qstart, collisionFreeSolution);
+        MPsolver.setStartQ(Qstart);
+        MPsolver.setTarget(Qtarget);
+        MPsolver.setWorldTobject(frameWorldTObj);
+        MPsolver.setSubgoalDistance(0.1);
         
-        // Get path from Qstart to Qgoal
-        rw::trajectory::QPath path;
-        rw::trajectory::QPath linIntPath;
-        bool pathFound = planner->query(Qstart, Qgoal, path);
-        if (pathFound) {
-            std::cout << "Path found!" << std::endl;
-            std::cout << "Path length: " << path.size() << std::endl;
-        } else {
-            std::cout << "Path not found!" << std::endl;
-        }
+        MPsolver.calculateSubgoals();
+        rw::trajectory::QPath path = MPsolver.getLinearPath(0.1);
+        rw::trajectory::TimedStatePath replayPath = MPsolver.getReplay();
 
-        double time_step = 0.1;
-        double linIntTimeStep = 1;
-        for(unsigned int i = 0; i < path.size()-1; i++)
-        {
-            rw::trajectory::LinearInterpolator<rw::math::Q> LinInt(path[i], path[i+1], linIntTimeStep);
-            for(double dt = 0.0; dt < linIntTimeStep; dt += time_step)
-            {
-                linIntPath.push_back(LinInt.x(dt));
-            }
-        }
-
-        // Create path player
-        auto stateCopy = wc->getDefaultState();
-        double time = 0;
-        rw::trajectory::TimedStatePath replayPath;
-        for (auto q : linIntPath) {
-            UR5->setQ(q, stateCopy);
-            replayPath.push_back(rw::trajectory::TimedState(time, stateCopy));
-            time += time_step;
-        }
         rw::loaders::PathLoader::storeTimedStatePath(*wc, replayPath, "../../Project_WorkCell/RRTPath.rwplay");
         std::cout << "replayfile created" << std::endl;
         
@@ -605,6 +576,7 @@ int main(int argc, char** argv)
         // Close camera, scanner and RobWorkStudio
         RealSense.close();
         app.close();
+        UR5_control.disconnect();
     }
     RWS_END()
     

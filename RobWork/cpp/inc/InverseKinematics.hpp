@@ -30,8 +30,9 @@ public:
      * @brief Construct a new Inverse Kinematics object.
      * @param robot The robot to solve inverse kinematics for.
      * @param wc The workcell to solve inverse kinematics in.
+     * @param state The state to solve inverse kinematics in.
     */
-    InverseKinematics(rw::models::SerialDevice::Ptr robot, rw::core::Ptr<rw::models::WorkCell> wc);
+    InverseKinematics(rw::models::SerialDevice::Ptr robot, rw::core::Ptr<rw::models::WorkCell> wc, rw::kinematics::State state);
     ~InverseKinematics();
 
 public:
@@ -78,6 +79,9 @@ private:
     rw::proximity::CollisionDetector::Ptr collisionDetector_;
     std::vector<rw::math::Q> collisionFreeSolutions_;
     rw::trajectory::TimedStatePath collisionFreeStates_;
+
+public: //for debugging
+    rw::trajectory::TimedStatePath collisionStates_;
 };
 
 
