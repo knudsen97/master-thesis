@@ -435,7 +435,7 @@ int main(int argc, char** argv)
             center_rw(2) = -center_rw(2);
 
             // Calculating transformation            
-            rw::math::Rotation3D R_obj_cam;
+            rw::math::Rotation3D<double> R_obj_cam;
             processor.computeRotationMatrixFromNormal(normal, R_obj_cam);
             T_obj_cam = rw::math::Transform3D<double>(center_rw, R_obj_cam);
         }
