@@ -23,28 +23,63 @@ message("-- RobWork found: " ${RW_ROOT})
 
 # Include all local header and source files
 file(GLOB SOURCES
-    src/*.cpp
-    inc/*.hpp
-    inc/*.h
+    src/CameraCalibration.cpp
+    inc/CameraCalibration.hpp
+
+    src/Sensor.cpp
+    inc/Sensor.hpp
+
+    src/Inference.cpp
+    inc/Inference.hpp
+
+    src/PredictionProcessor.cpp
+    inc/PredictionProcessor.hpp
+
+    src/main.cpp
 )
+
+file(GLOB CALIB_SOURCES
+    src/CameraCalibration.cpp
+    inc/CameraCalibration.hpp
+
+    src/Sensor.cpp
+    inc/Sensor.hpp
+
+    src/calibration.cpp
+) 
 
 # And now we add any targets that we want
 add_executable(main ${SOURCES})
+add_executable(calibration ${CALIB_SOURCES})
+
 
 # if you have additional libraries or include dirs then add them here
-set(USER_LIBRARIES
+set(MAIN_LIBRARIES
   Open3D::Open3D
   ${OpenCV_LIBS} 
   ${ROBWORK_LIBRARIES}
   # ${REALSENSE2_FOUND}
   )
 
-set(USER_INCLUDE_DIRS
+set(MAIN_INCLUDE_DIRS
   ${OpenCV_INCLUDE_DIRS}
   ${ROBWORK_INCLUDE_DIRS} 
 )
 
-target_link_libraries(main PRIVATE ${USER_LIBRARIES})
-target_include_directories(main PRIVATE ${USER_INCLUDE_DIRS})
+set(CALIB_LIBRARIES
+  Open3D::Open3D
+  ${OpenCV_LIBS} 
+  # ${ROBWORK_LIBRARIES}
+  )
+
+set(CALIB_INCLUDE_DIRS
+  ${OpenCV_INCLUDE_DIRS}
+)
+
+target_link_libraries(main PRIVATE ${MAIN_LIBRARIES})
+target_include_directories(main PRIVATE ${MAIN_INCLUDE_DIRS})
+
+target_link_libraries(calibration PRIVATE ${CALIB_LIBRARIES})
+target_include_directories(calibration PRIVATE ${CALIB_INCLUDE_DIRS})
 link_directories()
 
