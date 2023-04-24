@@ -5,7 +5,7 @@ int main(int argc, char* argv[])
 {
     int num_images = 10;
 
-    for (size_t i = 0; i < argc; i++)
+    for (int i = 0; i < argc; i++)
     {
         if (std::string(argv[i]) == "--num_images")
         {

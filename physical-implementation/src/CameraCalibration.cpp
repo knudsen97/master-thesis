@@ -148,7 +148,7 @@ cv::Mat CameraCalibration::calibrate(double square_size)
     // Calculate the reprojection error
     std::cout << "Reprojection error" << std::endl;
     double total_error = 0;
-    for (int i = 0; i < obj_points_vec.size(); i++)
+    for (size_t i = 0; i < obj_points_vec.size(); i++)
     {
         std::vector<cv::Point2f> img_points_reproj;
         cv::projectPoints(obj_points_vec[i], rvecs[i], tvecs[i], camera_matrix, dist_coeffs, img_points_reproj);

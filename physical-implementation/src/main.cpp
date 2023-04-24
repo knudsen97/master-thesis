@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
     std::string model_name;
     bool find_extrinsics = false;
 
-    for (size_t i = 0; i < argc; i++)
+    for (int i = 0; i < argc; i++)
     {
         if (std::string(argv[i]) == "--model")
         {
