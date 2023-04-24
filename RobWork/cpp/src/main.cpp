@@ -204,6 +204,7 @@ int main(int argc, char** argv)
     std::string model_name = "unet_resnet101_10_l2_e-5_scse_synthetic_data_4000_jit.pt";
     std::string file_name;
     std::string folder_name;
+    std::string result_file_name = "results.csv";
 
     for (int i = 0; i < argc; i++)
     {
@@ -219,6 +220,11 @@ int main(int argc, char** argv)
         {
             folder_name = argv[i + 1];
         }
+        else if (std::string(argv[i]) == "--result_file_name")
+        {
+            result_file_name = argv[i + 1];
+        }
+        
     }
     if (file_name.empty())
     {
@@ -231,17 +237,16 @@ int main(int argc, char** argv)
         
     std::cout << "using model: " << model_name << std::endl;
 
-    // Connecting to UR
-    std::string ip = "172.17.0.2";
-    std::cout << "connecting to UR" << std::endl;
-    ur_rtde::RTDEControlInterface UR5_control(ip);
-    if (!UR5_control.isConnected())
-    {
-        std::cerr << "Failed to connect to UR5" << std::endl;
-        return -1;
-    }
-    std::cout << "connected" << std::endl;
-    // UR5_control.moveJ({0,0,0,0,0,0}, 0.1, 0.1); //homing the robot
+    // // Connecting to UR
+    // std::string ip = "172.17.0.2";
+    // std::cout << "connecting to UR" << std::endl;
+    // ur_rtde::RTDEControlInterface UR5_control(ip);
+    // if (!UR5_control.isConnected())
+    // {
+    //     std::cerr << "Failed to connect to UR5" << std::endl;
+    //     return -1;
+    // }
+    // std::cout << "connected" << std::endl;
 
     // Load workcell
     std::string wcFile = "../../Project_WorkCell/Scene.wc.xml";
@@ -312,8 +317,8 @@ int main(int argc, char** argv)
         const Simulator::UpdateInfo info(DT);
         State state = wc->getDefaultState();
         //set state of simulation robot to state of the robot
-        std::vector<double> UR5_acual_joint = UR5_control.getActualJointPositionsHistory();
-        UR5->setQ(UR5_acual_joint, state);
+        // std::vector<double> UR5_acual_joint = UR5_control.getActualJointPositionsHistory();
+        // UR5->setQ(UR5_acual_joint, state);
 
         // Get camera extrinsics from camera frame
         cv::Mat R = cv::Mat::zeros(3, 3, CV_64F);
@@ -352,7 +357,7 @@ int main(int argc, char** argv)
             std::cerr << "Inference failure" << std::endl;
             RealSense.close();
             app.close();
-            UR5_control.disconnect();
+            // UR5_control.disconnect();
             return -1;
         }
         
@@ -513,7 +518,7 @@ int main(int argc, char** argv)
             std::cerr << "Invalid point found by inference" << std::endl;
             RealSense.close();
             app.close();
-            UR5_control.disconnect();
+            // UR5_control.disconnect();
             return -1;
         }
 
@@ -538,6 +543,10 @@ int main(int argc, char** argv)
         std::cout << "True positives: " << evalResults[0] << std::endl;
         std::cout << "False positives: " << evalResults[1] << std::endl;
         std::cout << "False negatives: " << evalResults[2] << std::endl;
+        std::fstream file;
+        file.open(result_file_name, std::ios::out | std::ios::app);
+        file << model_name << "," << evalResults[0] << "," << evalResults[1] << "," << evalResults[2] << std::endl;
+        file.close();
 
         std::cout << "---- inverse kinematics ----" << std::endl;
         InverseKinematics IKsolver(UR5, wc, state);
@@ -549,7 +558,7 @@ int main(int argc, char** argv)
             std::cerr << "No solution found for inverse kinematics goal" << std::endl;
             RealSense.close();
             app.close();
-            UR5_control.disconnect();
+            // UR5_control.disconnect();
             return -1;
         }
         std::vector<rw::math::Q> collisionFreeSolution = IKsolver.getSolutions();
@@ -576,7 +585,7 @@ int main(int argc, char** argv)
         // Close camera, scanner and RobWorkStudio
         RealSense.close();
         app.close();
-        UR5_control.disconnect();
+        // UR5_control.disconnect();
     }
     RWS_END()
     

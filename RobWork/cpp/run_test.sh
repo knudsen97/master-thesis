@@ -76,14 +76,14 @@ folder_names=( \
 
 #define workcells
 workcells=( \
-"all_object_scattered.xml" \
-# "all_object_cluttered.xml" \
-# "4_object_scattered.xml" \
-# "4_object_cluttered.xml" \
-# "3_object_scattered.xml" \
-# "3_object_cluttered.xml" \
-# "2_object_scattered.xml" \
-# "2_object_cluttered.xml" \
+# "5_scattered.xml" \
+# "5_cluttered.xml" \
+# "4_scattered.xml" \
+# "4_cluttered.xml" \
+# "3_scattered.xml" \
+# "3_cluttered.xml" \
+# "2_scattered.xml" \
+# "2_cluttered.xml" \
 # "creeper_scene.xml" \
 # "puzzle_scene.xml" \
 # "kodimagnyl_scene.xml" \
@@ -92,9 +92,17 @@ workcells=( \
 # "zendium_scene.xml" \
 )
 
+
+result_file=testresults.csv
+if test -f $result_file; then
+    echo "$result_file exists."
+else
+    echo "File does not exist. Creating file: $result_file"
+    echo "Workcell,Model,True positive,False positive,False negative" >> $result_file
+fi
+
 current_working_directory=$(pwd)
 cd build
-
 for j in ${!workcells[@]}
 do
     # change test scene
@@ -104,9 +112,10 @@ do
         echo "Running model: ${models[$i]}"
         echo "File name: ${file_names[$i]}"
         echo "Running command: ./main --model_name ${models[$i]} --file_name ${file_names[$i]} --folder_name ${folder_names[$i]}"
-        ./main --model_name ${models[$i]} --file_name ${file_names[$i]} --folder_name ${folder_names[$i]}
+        echo -n ${workcells[$j]} >> ../$result_file,
+        ./main --model_name ${models[$i]} --folder_name ${folder_names[$i]} --file_name ${file_names[$i]}_${workcells[$j]} --result_file_name ../$result_file
         # trim point cloud image
-        convert -trim ../images/${folder_names[$i]}/${file_names[$i]}_point_cloud.png ../images/${folder_names[$i]}/${file_names[$i]}_point_cloud.png
+        convert -trim ../images/${folder_names[$i]}/${file_names[$i]}_${workcells[$j]}_point_cloud.png ../images/${folder_names[$i]}/${file_names[$i]}_${workcells[$j]}_point_cloud.png
     done
 done
 
