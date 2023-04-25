@@ -28,6 +28,9 @@ find_package(RobWorkStudio REQUIRED)
 message("-- RobWorkStudio found: " ${RWS_ROOT})
 # -------------------------------------------- 
 
+# Find RTDE
+find_package(ur_rtde REQUIRED)
+
 # Include all local header and source files
 file(GLOB SOURCES
     src/*.cpp
@@ -44,6 +47,7 @@ set(USER_LIBRARIES
   ${OpenCV_LIBS} 
   ${ROBWORK_LIBRARIES}
   RWS::sdurws_robworkstudioapp
+  ur_rtde::rtde
   # z 
   # expat
   )

@@ -39,7 +39,7 @@
 #include <rw/pathplanning/PlannerConstraint.hpp>
 #include <rw/trajectory.hpp>
 
-// include rtde
+// Include rtde
 #include <ur_rtde/rtde_receive_interface.h>
 #include <ur_rtde/rtde_control_interface.h>
 
@@ -414,6 +414,10 @@ int main(int argc, char** argv)
         rw::math::Transform3D<double> T_obj_cam;
         std::vector<rw::math::Transform3D<double>> T_obj_cam_vec;
         std::vector<int> tp_fp;
+        rw::math::Transform3D<> frameObjTCam;
+        rw::math::Transform3D<> frameCamTObj;
+        rw::math::Transform3D<> frameWorldTCam;
+        rw::math::Transform3D<> frameWorldTObj;
         if (estimateNormal)
         {
             std::cout << "---- Estimate normals ----" << std::endl;
@@ -466,9 +470,45 @@ int main(int argc, char** argv)
             rw::math::Rotation3D<double> R_obj_cam;
             processor.computeRotationMatrixFromNormal(normal, R_obj_cam);
             T_obj_cam = rw::math::Transform3D<double>(center_rw, R_obj_cam);
+
+            // transform from world to object
+            frameObjTCam = T_obj_cam;
+            
+            // lets pretend that obj->cam is actually cam->obj (if this does not work, use the above code)
+            frameCamTObj = frameObjTCam;
+
+            // Calculate world to object transformation
+            frameWorldTCam = camTransform;
+            frameWorldTObj = frameWorldTCam * frameCamTObj;
+
+
+            for (auto& c : centers_3d_rw)
+            {
+                c = frameWorldTCam * c;
+            }
+            std::vector<int> evalResults;
+            std::cout << "---- Evaluating blob count ----" << std::endl;
+            evalResults = evaluateBlobCount(centers_3d_rw, wc);
+            std::cout << "True positives: " << evalResults[0] << std::endl;
+            std::cout << "False positives: " << evalResults[1] << std::endl;
+            std::cout << "False negatives: " << evalResults[2] << std::endl;
+            std::fstream file;
+            file.open(result_file_name, std::ios::out | std::ios::app);
+            file << folder_name << "," << evalResults[0] << "," << evalResults[1] << "," << evalResults[2] << std::endl;
+            file.close();
         }
         else
         {
+            std::vector<int> evalResults;
+            std::cout << "---- Evaluating blob count ----" << std::endl;
+            evalResults = evaluateBlobCount({}, wc);
+            std::cout << "True positives: " << evalResults[0] << std::endl;
+            std::cout << "False positives: " << evalResults[1] << std::endl;
+            std::cout << "False negatives: " << evalResults[2] << std::endl;
+            std::fstream file;
+            file.open(result_file_name, std::ios::out | std::ios::app);
+            file << folder_name << "," << evalResults[0] << "," << evalResults[1] << "," << evalResults[2] << std::endl;
+            file.close();
             std::cout << "No blob found" << std::endl;
         }
 
@@ -521,32 +561,6 @@ int main(int argc, char** argv)
             // UR5_control.disconnect();
             return -1;
         }
-
-        // transform from world to object
-        rw::math::Transform3D<> frameObjTCam = T_obj_cam;
-        
-        // lets pretend that obj->cam is actually cam->obj (if this does not work, use the above code)
-        rw::math::Transform3D<> frameCamTObj = frameObjTCam;
-
-        // Calculate world to object transformation
-        rw::math::Transform3D<> frameWorldTCam = camTransform;
-        rw::math::Transform3D<> frameWorldTObj = frameWorldTCam * frameCamTObj;
-
-
-        for (auto& c : centers_3d_rw)
-        {
-            c = frameWorldTCam * c;
-        }
-        std::vector<int> evalResults;
-        std::cout << "---- Evaluating blob count ----" << std::endl;
-        evalResults = evaluateBlobCount(centers_3d_rw, wc);
-        std::cout << "True positives: " << evalResults[0] << std::endl;
-        std::cout << "False positives: " << evalResults[1] << std::endl;
-        std::cout << "False negatives: " << evalResults[2] << std::endl;
-        std::fstream file;
-        file.open(result_file_name, std::ios::out | std::ios::app);
-        file << model_name << "," << evalResults[0] << "," << evalResults[1] << "," << evalResults[2] << std::endl;
-        file.close();
 
         std::cout << "---- inverse kinematics ----" << std::endl;
         InverseKinematics IKsolver(UR5, wc, state);
