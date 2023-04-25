@@ -7,6 +7,9 @@
 // Include Open3D header file
 #include <open3d/Open3D.h>
 
+// RobWork includes
+#include <rw/math.hpp>
+
 // Include header files
 #include "../inc/Sensor.hpp"
 #include "../inc/PredictionProcessor.hpp"
@@ -48,7 +51,7 @@ int main(int argc, char* argv[])
         else if (std::string(argv[i]) == "--find_extrinsics")
         {
             std::string arg = argv[i + 1];
-            // Change string to lowercase
+            // Change string to lowercase.
             std::transform(arg.begin(), arg.end(), arg.begin(), [](unsigned char c){ return std::tolower(c); });
             std::cout << "arg: " << arg << std::endl;
             if (arg == "true")
@@ -140,15 +143,13 @@ int main(int argc, char* argv[])
 
         // Create point cloud
         auto open3d_depth_legacy = open3d_depth.ToLegacy();
-        // int depth_scale = 1000;
-        // double depth_scale = 1e4;
         PointCloudPtr pc;
         pc = open3d::geometry::PointCloud::CreateFromDepthImage(open3d_depth_legacy, camera_intrinsics, extrinsics_eigen, depth_scale);
         pc->Transform(flip_mat);
         
 
         // Do prediction
-        if (key == 'k')
+        if (key == 'p')
         {
             // Down sample with voxel grid
             processor.outlierRemoval(pc, 0.0005, 1.0, 5);
@@ -207,7 +208,7 @@ int main(int argc, char* argv[])
             std::cout << "normal: " << normal << std::endl;
 
             // Compute rotation matrix from normal
-            cv::Mat R_obj_cam;
+            rw::math::Rotation3D<double> R_obj_cam;
             processor.computeRotationMatrixFromNormal(normal, R_obj_cam);
 
             // manual flipping for test
@@ -215,10 +216,9 @@ int main(int argc, char* argv[])
             center_3d.z = -center_3d.z;
 
             // Create transformation matrix of object in camera frame
-            cv::Mat T_obj_cam;
-            cv::hconcat(R_obj_cam, cv::Mat(center_3d), T_obj_cam);
-            cv::vconcat(T_obj_cam, cv::Mat::zeros(1, 4, CV_64F), T_obj_cam);
-            T_obj_cam.at<double>(3, 3) = 1;
+            rw::math::Transform3D<double> T_obj_cam;//_rw;
+            rw::math::Vector3D<double> center_3d_rw(center_3d.x, center_3d.y, center_3d.z);
+            T_obj_cam = rw::math::Transform3D<double>(center_3d_rw, R_obj_cam);
             std::cout << "T_obj_cam: \n" << T_obj_cam << std::endl;
 
             // ------------------------------------------------------
@@ -258,7 +258,7 @@ int main(int argc, char* argv[])
         cv::imshow("color", image);
 
         // If you want to create point cloud press 'p' or close the program with 'q' or 'esc'
-        if (key == 'p')
+        if (key == 't')
         {
             // Down sample with voxel grid
             processor.outlierRemoval(pc, 0.0005, 1.0, 5);

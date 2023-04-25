@@ -127,7 +127,7 @@ int PredictionProcessor::findIndexOfClosestPoint(const PointCloudPtr &pc, const 
  * @param normal The normal vector.
  * @param R The rotation matrix.
 */
-void PredictionProcessor::computeRotationMatrixFromNormal(const Eigen::Vector3d &normal, cv::Mat &R)
+void PredictionProcessor::computeRotationMatrixFromNormal(const Eigen::Vector3d &normal, rw::math::Rotation3D<double> &R)
 {
     Eigen::Vector3d u;
     if (normal[0] != 0 || normal[1] != 0)
@@ -142,12 +142,11 @@ void PredictionProcessor::computeRotationMatrixFromNormal(const Eigen::Vector3d 
     v = v / v.norm();
     Eigen::Vector3d n = normal / normal.norm();
 
-    R = cv::Mat::zeros(3, 3, CV_64F);
     for (size_t i = 0; i < 3; i++)
     {
-        R.at<double>(0, i) = u[i];
-        R.at<double>(1, i) = v[i];
-        R.at<double>(2, i) = n[i];
+        R(0,i) = u[i];
+        R(1,i) = v[i];
+        R(2,i) = n[i];
     }
 }
 
