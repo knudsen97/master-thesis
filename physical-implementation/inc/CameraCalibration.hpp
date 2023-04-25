@@ -21,7 +21,7 @@ class CameraCalibration
     cv::Mat calibrate(double square_size);
 
     // Calculate extrinsics
-    cv::Mat calculateExtrinsics(Sensor &sensor, const std::string &filename);//, cv::Mat &rvecs, cv::Mat &tvecs);
+    cv::Mat calculateExtrinsics(Sensor &sensor, const std::string &filename_calibration, const std::string &filename_extrinsics);//, cv::Mat &rvecs, cv::Mat &tvecs);
 
     private:
     cv::Size grid_size;
