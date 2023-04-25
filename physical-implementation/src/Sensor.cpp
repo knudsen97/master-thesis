@@ -48,7 +48,14 @@ void Sensor::setIntrinsics(double fovy)
     this->intrinsics = (cv::Mat_<double>(3, 3) << fovy_pixel, 0.0,        this->width/2.0, 
                                                   0.0,        fovy_pixel, this->height/2.0, 
                                                   0.0,        0.0,        1.0);
+    std::cout << "Intrinsics from Sensor class: \n" << this->intrinsics << std::endl;
 }
+
+void Sensor::setIntrinsics(const cv::Mat &intrinsics)
+{
+    this->intrinsics = intrinsics;
+}
+
 
 void Sensor::getIntrinsics(cv::Mat &intrinsics)
 {
@@ -59,6 +66,23 @@ void Sensor::setExtrinsics(const Eigen::Matrix4d& extrinsics)
 {
     this->extrinsics = extrinsics;
 }
+
+void Sensor::setExtrinsics(const cv::Mat& extrinsics)
+{
+    // Convert cv::Mat to Eigen::Matrix4d
+    Eigen::Matrix4d extrinsics_eigen;
+
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 4; j++)
+        {
+            extrinsics_eigen(i, j) = extrinsics.at<double>(i, j);
+        }
+    }
+
+    this->extrinsics = extrinsics_eigen;
+}
+
 
 void Sensor::getExtrinsics(Eigen::Matrix4d& extrinsics)
 {
@@ -105,8 +129,25 @@ void Sensor::grabFrame(open3d::t::geometry::Image &image, open3d::t::geometry::I
     depth = im_rgbd.depth_;
     // auto open3d_image = im_rgbd.color_;
     // auto open3d_depth = im_rgbd.depth_;
+}
 
-
+void Sensor::open3d_to_cv(open3d::t::geometry::Image &open3d_image, cv::Mat &cv_image, bool is_color)
+{
+    if (is_color)
+    {
+        cv::Mat cv_image_copy(open3d_image.GetRows(), open3d_image.GetCols(),
+                    CV_8UC(open3d_image.GetChannels()),
+                    open3d_image.GetDataPtr());
+        cv::cvtColor(cv_image_copy, cv_image_copy, cv::COLOR_RGB2BGR);
+        cv_image_copy.copyTo(cv_image);
+    }
+    else
+    {
+        cv::Mat cv_image_copy(open3d_image.GetRows(), open3d_image.GetCols(),
+                    CV_16UC(open3d_image.GetChannels()),
+                    open3d_image.GetDataPtr());
+        cv_image_copy.copyTo(cv_image);
+    }
 }
 
 
