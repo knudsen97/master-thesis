@@ -104,6 +104,7 @@ int main(int argc, char* argv[])
 
     // sensor.setExtrinsics(extrinsics); // This does not work if the pointcloud
     sensor.setExtrinsics(extrinsics_eigen); // Has to be identity matrix for pointcloud
+    sensor.createPinholeCameraIntrinsics(camera_intrinsics);
 
     // Close all cv windows
     cv::destroyAllWindows();
@@ -112,12 +113,15 @@ int main(int argc, char* argv[])
     std::cout << "Intrinsics:\n" << intrinsics << std::endl;
     std::cout << "Extrinsics:\n" << extrinsics << std::endl;
 
-    // Create flip matrix to flip the point cloud
+    // Create flip matrix to flip the point cloud and setup the processor
     Eigen::Matrix4d flip_mat;
     flip_mat << 1, 0, 0, 0,
                 0, -1, 0, 0,
                 0, 0, -1, 0,
                 0, 0, 0, 1;
+    processor.setIntrinsicsAndExtrinsics(camera_intrinsics, extrinsics_eigen);
+    processor.setFlipMatrix(flip_mat);
+
 
     while(true)
     {
@@ -131,49 +135,122 @@ int main(int argc, char* argv[])
         sensor.open3d_to_cv(open3d_image, image, true);
         sensor.open3d_to_cv(open3d_depth, depth, false);
 
+        // Just identity at the moment
+        sensor.getExtrinsics(extrinsics_eigen);
+
         // Create point cloud
         auto open3d_depth_legacy = open3d_depth.ToLegacy();
-        sensor.createPinholeCameraIntrinsics(camera_intrinsics);
-        sensor.getExtrinsics(extrinsics_eigen);
-        int depth_scale = 1000;
+        // int depth_scale = 1000;
+        // double depth_scale = 1e4;
         PointCloudPtr pc;
         pc = open3d::geometry::PointCloud::CreateFromDepthImage(open3d_depth_legacy, camera_intrinsics, extrinsics_eigen, depth_scale);
         pc->Transform(flip_mat);
+        
 
         // Do prediction
         if (key == 'k')
         {
+            // Down sample with voxel grid
+            processor.outlierRemoval(pc, 0.0005, 1.0, 5);
+
+            // Do inference
             image.copyTo(pred_image);
             auto time_start = std::chrono::high_resolution_clock::now();
             inference_sucess = inf.predict(pred_image, returned_image);
             auto time_end = std::chrono::high_resolution_clock::now();
             std::cout << "Time taken: " << std::chrono::duration_cast<std::chrono::milliseconds>(time_end - time_start).count() << " ms" << std::endl;
     
+            // Compute centers
             cv::Point center = cv::Point(400, 200);
             std::vector<cv::Point> centers;
             processor.computeCenters(returned_image, centers, 10000);
 
-            if (centers.size() > 0)
+            // If the inference was successful and there is at least one center
+            if (!inference_sucess && centers.size() <= 0)
             {
-                center = centers[0];
-                for (auto c : centers)
-                    std::cout << "center: " << c << std::endl;
-                cv::circle(pred_image, center, 5, cv::Scalar(0, 0, 255), -1);
-                cv::circle(returned_image, center, 5, cv::Scalar(0, 0, 0), -1);
-            }
-            else
-            {
-                std::cout << "No graspable areas found" << std::endl;
-            }
-
-            if (inference_sucess)
-            {
-                std::cout << "Inference success" << std::endl;
-                cv::imshow("Image", pred_image);
-                cv::imshow("Prediction", returned_image);
-            }
-            else
                 std::cout << "Inference failure" << std::endl;
+                continue;
+            }
+            std::cout << "Inference success" << std::endl;
+
+            // Centers are sorted by size, so the largest center is the one we want
+            center = centers[0];
+            for (auto c : centers)
+                std::cout << "center: " << c << std::endl;
+            cv::circle(pred_image, center, 5, cv::Scalar(0, 0, 255), -1);
+            cv::circle(returned_image, center, 5, cv::Scalar(0, 0, 0), -1);
+
+
+            /* ----- Process the prediction ----- */
+            // Estimate normals for point cloud and normalize them
+            processor.estimateAllNormals(pc, 0.05, 30, true);
+
+            // Convert pixel to 3d point
+            cv::Point3d center_3d;
+            processor.pixel2cam(depth, center, center_3d);
+            std::cout << "center_3d: " << center_3d << std::endl;
+
+            // Find index of closest point in point cloud to 3d center point
+            int min_index = processor.findIndexOfClosestPoint(pc, center_3d, true);
+            std::cout << "min_index: " << min_index << std::endl;
+
+            // Get normal and 3d point from closest point in point cloud 
+            auto point_3d = pc->points_[min_index];
+            auto normal = pc->normals_[min_index];
+            std::cout << "point_3d: " << point_3d << std::endl;
+            std::cout << "normal: " << normal << std::endl;
+
+
+            // Flip normal if it points away from camera
+            if (normal(2) < 0)
+                normal = -normal;
+            std::cout << "normal: " << normal << std::endl;
+
+            // Compute rotation matrix from normal
+            cv::Mat R_obj_cam;
+            processor.computeRotationMatrixFromNormal(normal, R_obj_cam);
+
+            // manual flipping for test
+            center_3d.x = -center_3d.x;
+            center_3d.z = -center_3d.z;
+
+            // Create transformation matrix of object in camera frame
+            cv::Mat T_obj_cam;
+            cv::hconcat(R_obj_cam, cv::Mat(center_3d), T_obj_cam);
+            cv::vconcat(T_obj_cam, cv::Mat::zeros(1, 4, CV_64F), T_obj_cam);
+            T_obj_cam.at<double>(3, 3) = 1;
+            std::cout << "T_obj_cam: \n" << T_obj_cam << std::endl;
+
+            // ------------------------------------------------------
+            // ------------- Visualization --------------------------
+            // ------------------------------------------------------
+
+            cv::imshow("Image", pred_image);
+            cv::imshow("Prediction", returned_image);
+            cv::waitKey(0);
+
+            // Create normal vector line
+            double scale = 0.01;
+            auto line = open3d::geometry::LineSet();
+            line.points_.push_back(point_3d);
+            line.points_.push_back(point_3d + normal*scale);
+            line.lines_.push_back(Eigen::Vector2i(0, 1));
+            line.colors_.push_back(Eigen::Vector3d(1, 0, 0));
+            auto line_ptr = std::make_shared<open3d::geometry::LineSet>(line);
+
+            open3d::visualization::VisualizerWithKeyCallback o3d_vis;
+            o3d_vis.CreateVisualizerWindow("PointCloud", image_size.width, image_size.height);
+            o3d_vis.AddGeometry(pc);
+            o3d_vis.AddGeometry(line_ptr);
+            // o3d_vis.CaptureScreenImage(point_cloud_file_name);
+            o3d_vis.Run();
+
+            double valid_point_th = 0.001;
+            if(abs(point_3d(0) - center_3d.x) < valid_point_th && abs(point_3d(1) - center_3d.y) < valid_point_th)
+            {
+                std::cerr << "Invalid point found by inference" << std::endl;
+                break;
+            }
         }
 
         // Visualization
@@ -183,6 +260,10 @@ int main(int argc, char* argv[])
         // If you want to create point cloud press 'p' or close the program with 'q' or 'esc'
         if (key == 'p')
         {
+            // Down sample with voxel grid
+            processor.outlierRemoval(pc, 0.0005, 1.0, 5);
+
+            // Visualize point cloud
             auto resolution = sensor.getResolution();
             open3d::visualization::VisualizerWithKeyCallback o3d_vis;
             o3d_vis.CreateVisualizerWindow("PointCloud", resolution.first, resolution.second);

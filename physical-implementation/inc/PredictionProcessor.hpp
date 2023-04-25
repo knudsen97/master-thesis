@@ -38,6 +38,8 @@ public:
     void computeRotationMatrixFromNormal(const Eigen::Vector3d &normal, cv::Mat &R);
     void computeCenters(const cv::Mat &image, std::vector<cv::Point2i> &dest, int max_radius=10000);
 
+    void outlierRemoval(PointCloudPtr &pc, double voxel_size, double std_dev, int nn_max);
+
 
 private:
     void cv2o3dImage(const cv::Mat &cv_image_in, open3d::geometry::Image &o3d_image_out);

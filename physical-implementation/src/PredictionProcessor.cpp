@@ -193,6 +193,13 @@ void PredictionProcessor::computeCenters(const cv::Mat &image, std::vector<cv::P
     }
 }
 
+void PredictionProcessor::outlierRemoval(PointCloudPtr &pc, double voxel_size, double std_dev, int nn_max)
+{
+    // double voxel_size = 0.005;
+    auto voxel_down_pcd = pc->VoxelDownSample(voxel_size);
+    voxel_down_pcd->RemoveStatisticalOutliers(nn_max, std_dev);
+    pc = voxel_down_pcd;
+}
 
 // ------------------- Private Methods -------------------
 /**
