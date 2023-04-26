@@ -9,12 +9,20 @@
 
 // RobWork includes
 #include <rw/math.hpp>
+#include <rw/loaders.hpp>
+#include <rw/models.hpp>
+
+// Include rtde
+#include <ur_rtde/rtde_receive_interface.h>
+#include <ur_rtde/rtde_control_interface.h>
 
 // Include header files
 #include "../inc/Sensor.hpp"
 #include "../inc/PredictionProcessor.hpp"
 #include "../inc/Inference.hpp"
 #include "../inc/CameraCalibration.hpp"
+#include "../inc/InverseKinematics.hpp"
+#include "../inc/MotionPlanning.hpp"
 
 
 typedef std::shared_ptr<open3d::geometry::PointCloud> PointCloudPtr;
@@ -25,14 +33,26 @@ void load_extrinsics(const std::string &filename, cv::Mat &extrinsics);
 
 int main(int argc, char* argv[])
 {
-    // Check if the camera is connected
-    if (!open3d::t::io::RealSenseSensor::ListDevices())
-    {
-        std::cout << "No camera detected" << std::endl;
-        return 0;
-    }
+    // // Check if the camera is connected
+    // if (!open3d::t::io::RealSenseSensor::ListDevices())
+    // {
+    //     std::cerr << "No camera detected" << std::endl;
+    //     return -1;
+    // }
 
+    // Load workcell and device
+    std::string wcFile = "../Project_WorkCell/Scene.wc.xml";
+    const rw::models::WorkCell::Ptr wc = rw::loaders::WorkCellLoader::Factory::load(wcFile);
+    if (wc.isNull()) 
+        RW_THROW ("WorkCell could not be loaded.");
+    const rw::models::SerialDevice::Ptr UR5 = wc->findDevice<rw::models::SerialDevice>("UR-6-85-5-A");
+    if (UR5 == nullptr)
+        RW_THROW ("UR5 not found.");
 
+    // Connecting to UR
+    std::string ip = "172.17.0.2";
+    ur_rtde::RTDEControlInterface UR5_control(ip);
+    ur_rtde::RTDEReceiveInterface UR5_receive(ip);
     //-------------------------
     std::string model_file_name = "unet_resnet101_1_jit.pt";
     std::string model_name;
@@ -125,6 +145,8 @@ int main(int argc, char* argv[])
     processor.setIntrinsicsAndExtrinsics(camera_intrinsics, extrinsics_eigen);
     processor.setFlipMatrix(flip_mat);
 
+    // kinematics and motion planning variables
+    rw::math::Transform3D<double> T_obj_cam;//_rw;
 
     while(true)
     {
@@ -216,7 +238,6 @@ int main(int argc, char* argv[])
             center_3d.z = -center_3d.z;
 
             // Create transformation matrix of object in camera frame
-            rw::math::Transform3D<double> T_obj_cam;//_rw;
             rw::math::Vector3D<double> center_3d_rw(center_3d.x, center_3d.y, center_3d.z);
             T_obj_cam = rw::math::Transform3D<double>(center_3d_rw, R_obj_cam);
             std::cout << "T_obj_cam: \n" << T_obj_cam << std::endl;
@@ -257,6 +278,68 @@ int main(int argc, char* argv[])
         cv::imshow("depth", depth);
         cv::imshow("color", image);
 
+        // If you want to do the inverse kinematics and pathplanning, press 'k'
+        if (key == 'k')
+        {
+            if (!UR5_receive.isConnected())
+            {
+                std::cerr << "UR5_receive not connected" << std::endl;
+                break;
+            }
+
+            // Inverse kinematics
+            rw::kinematics::State state = wc->getDefaultState();
+            rw::math::Q q = UR5_receive.getActualQ();
+            UR5->setQ(q, state);
+            Eigen::Matrix4d extrinsics_eigen;
+            Eigen::Matrix3d rotation_eigen;
+            Eigen::Vector3d translation_eigen;
+            sensor.getExtrinsics(extrinsics_eigen);
+            rotation_eigen = extrinsics_eigen.block<3, 3>(0, 0);
+            translation_eigen = extrinsics_eigen.block<3, 1>(0, 3);
+
+            rw::math::Vector3D<double> translation_rw(translation_eigen);
+            rw::math::Rotation3D<double> rotation_rw(rotation_eigen);
+
+            rw::math::Transform3D<double> frameWorldTCam(translation_rw, rotation_rw);
+            rw::math::Transform3D<double> frameCamTObj = T_obj_cam;
+
+            // Calculate world to object transformation
+            rw::math::Transform3D<double> frameWorldTObj = frameWorldTCam * frameCamTObj;
+
+            InverseKinematics IKsolver(UR5, wc, state);
+            double angle_step = 0.1; // increment in roll angle
+            double start = -M_PI;
+            double end = M_PI;
+            if (!IKsolver.solve(frameWorldTObj, start, end, angle_step))
+            {
+                std::cerr << "No solution found for inverse kinematics goal" << std::endl;
+                break;
+            }
+            std::vector<rw::math::Q> collisionFreeSolution = IKsolver.getSolutions();
+
+            /* begin motion planning */
+            MotionPlanning MPsolver(UR5, wc, state);
+            rw::math::Q Qstart = UR5->getQ(state);
+            rw::math::Q Qtarget = MPsolver.getShortestSolutionFromQToQVec(Qstart, collisionFreeSolution);
+            MPsolver.setStartQ(Qstart);
+            MPsolver.setTarget(Qtarget);
+            MPsolver.setWorldTobject(frameWorldTObj);
+            MPsolver.setSubgoalDistance(0.1);
+
+            MPsolver.calculateSubgoals();
+            rw::trajectory::QPath path = MPsolver.getLinearPath(0.1);
+
+            if (!UR5_control.isConnected())
+            {
+                std::cerr << "UR5_control not connected" << std::endl;
+                break;
+            }
+            for (auto q : path)
+                UR5_control.moveJ(q.toStdVector()); // This line blocks the code until the robot reaches the target
+            
+        }
+
         // If you want to create point cloud press 'p' or close the program with 'q' or 'esc'
         if (key == 't')
         {
@@ -277,6 +360,7 @@ int main(int argc, char* argv[])
     }
 
     sensor.stopCapture();
+    
   
     return 0;
 }

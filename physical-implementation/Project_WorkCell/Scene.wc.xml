@@ -1,0 +1,30 @@
+<WorkCell name="Scene">
+
+	<Frame name="Table" refframe="WORLD" type="Fixed">
+		<RPY>0 0 0</RPY> <Pos>0 0 -0.1</Pos>		
+		<Drawable name="Table" refframe="Table">
+        	<Polytope file="table/Sigmund_table" />
+     	</Drawable>
+	</Frame>
+
+	<Frame name="URReference" refframe="Table" type="Movable">
+		<RPY>180 0 0</RPY> <Pos>0 -0.4 0.11</Pos>
+	</Frame>
+	<Include file="UR5/UR-6-85-5-A/Device.wc.xml" />
+
+<!--insert gripper definition-->
+	<Frame name="Tool" refframe="UR-6-85-5-A.TCP">
+		<RPY>90 0 0</RPY> <Pos> 0.0 0 0.0 </Pos>
+		<Drawable name="ToolUnit" refframe="UR-6-85-5-A.TCP">
+			<Polytope file="suctionGripper/ToolUnit" />
+		</Drawable>
+	</Frame>
+
+	<Frame name="GraspTCP" refframe="UR-6-85-5-A.TCP" type="Fixed">
+		<RPY>0 0 135</RPY> 
+		<Pos> 0.0 0.135 0.292 </Pos>
+	</Frame> 
+
+	<CollisionSetup file="SceneCollisionSetup.prox.xml" /> 
+
+</WorkCell>
