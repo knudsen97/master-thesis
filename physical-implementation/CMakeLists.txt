@@ -20,8 +20,8 @@ set(RobWork_DIR ${RW_ROOT}/cmake)
 find_package(RobWork REQUIRED)
 message("-- RobWork found: " ${RW_ROOT})
 
-# Find UR library
-find_package(ur_client_library REQUIRED)
+# Find RTDE
+find_package(ur_rtde REQUIRED)
 
 
 # Include all local header and source files
@@ -37,6 +37,12 @@ file(GLOB SOURCES
 
     src/PredictionProcessor.cpp
     inc/PredictionProcessor.hpp
+
+    src/MotionPlanning.cpp
+    inc/MotionPlanning.hpp
+
+    src/InverseKinematics.cpp
+    inc/InverseKinematics.hpp
 
     src/main.cpp
 )
@@ -62,7 +68,7 @@ set(MAIN_LIBRARIES
   ${OpenCV_LIBS} 
   ${ROBWORK_LIBRARIES}
   # ${REALSENSE2_FOUND} 
-  ur_client_library::urcl
+  ur_rtde::rtde
   )
 
 set(MAIN_INCLUDE_DIRS
