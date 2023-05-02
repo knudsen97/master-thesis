@@ -12,8 +12,21 @@
 	</Frame>
 	<Include file="UR5/UR-6-85-5-A/Device.wc.xml" />
 
+<!-- insert camera -->
+<Frame name="Camera_Left" refframe="UR-6-85-5-A.TCP" type="Movable">
+	<Pos> -0.0676 0.0 0.0175</Pos>
+	<RPY> 0 0 180</RPY>
+	<Property name="Camera" desc="[fovy,width,height]">50 640 480</Property>
+</Frame>
+
+<Frame name="Scanner25D" refframe="Camera_Left" type="Movable">
+	<Pos>0.0 0.0 0.0</Pos>
+	<RPY>0 0 0</RPY>
+	<Property name="Scanner25D" desc="[fovy,width,height]">50 640 480</Property>
+</Frame>
+
 <!--insert gripper definition-->
-	<Frame name="Tool" refframe="UR-6-85-5-A.TCP">
+	<!-- <Frame name="Tool" refframe="UR-6-85-5-A.TCP">
 		<RPY>90 0 0</RPY> <Pos> 0.0 0 0.0 </Pos>
 		<Drawable name="ToolUnit" refframe="UR-6-85-5-A.TCP">
 			<Polytope file="suctionGripper/ToolUnit" />
@@ -23,6 +36,19 @@
 	<Frame name="GraspTCP" refframe="UR-6-85-5-A.TCP" type="Fixed">
 		<RPY>0 0 135</RPY> 
 		<Pos> 0.0 0.135 0.292 </Pos>
+	</Frame>  -->
+
+	<Frame name="Tool" refframe="UR-6-85-5-A.TCP">
+		<RPY>45 0 0</RPY> <Pos> 0.0 0 -0.005 </Pos>
+		<Drawable name="ToolUnit" refframe="UR-6-85-5-A.TCP">
+			<Polytope file="penGripper/penGripper" />
+		</Drawable>
+	</Frame>
+
+	<Frame name="GraspTCP" refframe="UR-6-85-5-A.TCP" type="Fixed">
+		<RPY>0 0 180</RPY>
+		<!-- default is 0.15 + 1cm (0.01) (-0.01 if it cannot get into hole) -->
+		<Pos> 0.0 0 0.160 </Pos>
 	</Frame> 
 
 	<CollisionSetup file="SceneCollisionSetup.prox.xml" /> 

@@ -48,6 +48,7 @@ int main(int argc, char* argv[])
     const rw::models::SerialDevice::Ptr UR5 = wc->findDevice<rw::models::SerialDevice>("UR-6-85-5-A");
     if (UR5 == nullptr)
         RW_THROW ("UR5 not found.");
+    rw::kinematics::Frame* camFrame = wc->findFrame("Camera_Left");
 
     // Connecting to UR
     std::string ip = "172.17.0.2";
@@ -147,6 +148,7 @@ int main(int argc, char* argv[])
 
     // kinematics and motion planning variables
     rw::math::Transform3D<double> T_obj_cam;//_rw;
+    rw::trajectory::QPath path;
 
     while(true)
     {
@@ -290,7 +292,7 @@ int main(int argc, char* argv[])
             // Inverse kinematics
             rw::kinematics::State state = wc->getDefaultState();
             rw::math::Q q = UR5_receive.getActualQ();
-            UR5->setQ(q, state);
+            UR5->setQ(q, state); // set the current configuration to actual configuration
             Eigen::Matrix4d extrinsics_eigen;
             Eigen::Matrix3d rotation_eigen;
             Eigen::Vector3d translation_eigen;
@@ -302,6 +304,7 @@ int main(int argc, char* argv[])
             rw::math::Rotation3D<double> rotation_rw(rotation_eigen);
 
             rw::math::Transform3D<double> frameWorldTCam(translation_rw, rotation_rw);
+            frameWorldTCam = camFrame->wTf(state);
             rw::math::Transform3D<double> frameCamTObj = T_obj_cam;
 
             // Calculate world to object transformation
@@ -328,16 +331,32 @@ int main(int argc, char* argv[])
             MPsolver.setSubgoalDistance(0.1);
 
             MPsolver.calculateSubgoals();
-            rw::trajectory::QPath path = MPsolver.getLinearPath(0.1);
+            path = MPsolver.getLinearPath(0.1);
 
             if (!UR5_control.isConnected())
             {
                 std::cerr << "UR5_control not connected" << std::endl;
                 break;
             }
+            auto replay_state = state.clone();
+            rw::trajectory::TimedStatePath replayPath;
+            double time = 0;
+            for (auto q : path)
+            {
+                UR5->setQ(q, replay_state);
+                replayPath.push_back(rw::trajectory::TimedState(time, replay_state));
+                time += 0.1;
+            }
+            
+            rw::loaders::PathLoader::storeTimedStatePath(*wc, replayPath, "../../Project_WorkCell/RRTPath.rwplay");
+            
+            
+        }
+
+        if (key == 'r')
+        {
             for (auto q : path)
                 UR5_control.moveJ(q.toStdVector()); // This line blocks the code until the robot reaches the target
-            
         }
 
         // If you want to create point cloud press 'p' or close the program with 'q' or 'esc'
