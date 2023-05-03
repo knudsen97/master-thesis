@@ -53,6 +53,12 @@ public:
     std::vector<rw::math::Q> getSolutions();
 
     /**
+     * @brief Get the collision free solutions. Used for debug.
+     * @return A vector of collision free solutions.
+    */
+    std::vector<rw::math::Q> getColSolutions();
+
+    /**
      * @brief Get the solutions.
      * @param solutions A vector of solutions.
     */
@@ -63,6 +69,8 @@ public:
      * @return A vector of collision free solutions.
     */
     rw::trajectory::TimedStatePath getReplay();
+
+    rw::trajectory::TimedStatePath getColReplay();
 
     /**
      * @brief Get the collision free solutions replay.
@@ -78,6 +86,7 @@ private:
     rw::proximity::CollisionStrategy::Ptr collisionStrategy_;
     rw::proximity::CollisionDetector::Ptr collisionDetector_;
     std::vector<rw::math::Q> collisionFreeSolutions_;
+    std::vector<rw::math::Q> collisionSolutions_;
     rw::trajectory::TimedStatePath collisionFreeStates_;
 
 public: //for debugging
