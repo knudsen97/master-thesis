@@ -67,6 +67,7 @@ bool InverseKinematics::solve(rw::math::Transform3D<> WorldTTarget, double rollS
             }
             else
             {
+                this->collisionSolutions_.push_back(q);
                 this->collisionStates_.push_back(rw::trajectory::TimedState(timeCol, state_copy));
                 timeCol += 0.1;
             }
@@ -80,6 +81,11 @@ std::vector<rw::math::Q> InverseKinematics::getSolutions()
     return this->collisionFreeSolutions_;
 }
 
+std::vector<rw::math::Q> InverseKinematics::getColSolutions()
+{
+    return this->collisionSolutions_;
+}
+
 void InverseKinematics::getSolutions(std::vector<rw::math::Q>& solutions)
 {
     solutions = this->collisionFreeSolutions_;
@@ -90,6 +96,11 @@ void InverseKinematics::getSolutions(std::vector<rw::math::Q>& solutions)
 rw::trajectory::TimedStatePath InverseKinematics::getReplay()
 {
     return this->collisionFreeStates_;
+}
+
+rw::trajectory::TimedStatePath InverseKinematics::getColReplay()
+{
+    return this->collisionStates_;
 }
 
 void InverseKinematics::getReplay(rw::trajectory::TimedStatePath& replay)
