@@ -122,7 +122,7 @@ int main(int argc, char* argv[])
     int square_size = 19;
     CameraCalibration calib(board_size, image_size, square_size);
 
-    // Load intrinsics and extrinsics from YAML files
+    // Load intrinsics and extrinsics from JSON files
     cv::FileStorage fs;
     load_intrinsics("../config/calibration.json", intrinsics, dist_coeff);
     if(!intrinsics.empty())
@@ -130,11 +130,11 @@ int main(int argc, char* argv[])
     else // use default intrinsics
         sensor.setIntrinsics(50);
 
-    // Estimate extrinsics of the camera or load from YAML file
+    // Estimate extrinsics of the camera or load from JSON file
     if (find_extrinsics)
-        extrinsics = calib.calculateExtrinsics(sensor, "../config/calibration.yaml");
-    else // Load extrinsics from YAML file
-        load_extrinsics("../config/extrinsics.yaml", extrinsics);
+        extrinsics = calib.calculateExtrinsics(sensor, "../config/calibration.json", "../config/extrinsics.json");
+    else // Load extrinsics from JSON file
+        load_extrinsics("../config/extrinsics.json", extrinsics);
 
     // sensor.setExtrinsics(extrinsics); // This does not work if the pointcloud
     sensor.setExtrinsics(extrinsics_eigen); // Has to be identity matrix for pointcloud
@@ -423,7 +423,7 @@ void load_intrinsics(const std::string &filename, cv::Mat &intrinsics_out, cv::M
 
 void load_extrinsics(const std::string &filename, cv::Mat &extrinsics)
 {
-    cv::FileStorage fs("../config/extrinsics.yaml", cv::FileStorage::READ);
+    cv::FileStorage fs(filename, cv::FileStorage::READ);
     if (fs.isOpened())
     {
         fs["extrinsics"] >> extrinsics;

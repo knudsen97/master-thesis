@@ -136,10 +136,11 @@ cv::Mat CameraCalibration::calibrate(double square_size)
     tvecs[0].copyTo(extrinsics(cv::Rect(3, 0, 1, 3)));
     std::cout << "Extrinsics: \n" << extrinsics << std::endl;
 
-    // Save the camera matrix and distortion coefficients as yaml file
+    // Save the camera matrix and distortion coefficients as JSON file
     std::cout << "Saving camera matrix and distortion coefficients..." << std::endl;
 
-    cv::FileStorage fs("../config/calibration.yaml", cv::FileStorage::WRITE);
+    cv::FileStorage fs("../config/calibration.json", cv::FileStorage::WRITE);
+
     fs << "camera_matrix" << camera_matrix;
     fs << "distortion_coefficients" << dist_coeffs;
     fs.release();
@@ -175,14 +176,14 @@ cv::Mat CameraCalibration::calibrate(double square_size)
     return camera_matrix;
 }
 
-cv::Mat CameraCalibration::calculateExtrinsics(Sensor &sensor, const std::string &filename)
+cv::Mat CameraCalibration::calculateExtrinsics(Sensor &sensor, const std::string &filename_calibration, const std::string &filename_extrinsics)
 {
     std::cout << "\nGetting extrinsics of the camera...\n";
     std::cout << "Press 's' to save the extrinsics" << std::endl;
     std::cout << "Press 'q' or 'esc' to skip extrinsic step and use previous." << std::endl;
 
-    // Read camera matrix and distortion coefficients from yaml file
-    cv::FileStorage fs(filename, cv::FileStorage::READ);
+    // Read camera matrix and distortion coefficients from JSON file
+    cv::FileStorage fs(filename_calibration, cv::FileStorage::READ);
     cv::Mat camera_matrix, dist_coeffs;
     fs["camera_matrix"] >> camera_matrix;
     fs["distortion_coefficients"] >> dist_coeffs;
@@ -229,8 +230,8 @@ cv::Mat CameraCalibration::calculateExtrinsics(Sensor &sensor, const std::string
 
             if (!extrinsics.empty())
             {
-                // Save extrinsics to a YAML file
-                fs.open("../config/extrinsics.yaml", cv::FileStorage::WRITE);
+                // Save extrinsics to a JSON file
+                fs.open(filename_extrinsics, cv::FileStorage::WRITE);
                 fs << "extrinsics" << extrinsics;
                 fs.release();
                 break;
