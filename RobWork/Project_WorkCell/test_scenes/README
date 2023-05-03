@@ -1,0 +1,10 @@
+These scenes needs to be copied to the super folder before opening with robworks.
+The workcell has the name n_x_type.xml.
+n: the number of items.
+x: the items removed with highest index first. Look at 5_cluttered or 5_scattered for all items. The index it 1-5 starting from the top.
+type: either scattered or cluttered.
+
+e.g
+3_52_scattered.xml
+3 items, 5 and 2 removed, scattered.
+

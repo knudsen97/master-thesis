@@ -20,6 +20,16 @@
 		</Drawable>
 	</Frame>
 
+<!--insert gripper definition-->
+	<!-- <Frame name="Tool" refframe="UR-6-85-5-A.TCP">
+		<RPY>0 0 0</RPY> <Pos>0 0 0.072</Pos>
+	</Frame>
+	<Include file="wsg50/wsg50.xml" />
+
+	<Frame name="GraspTCP" refframe="UR-6-85-5-A.TCP" type="Fixed">
+		<RPY>0 0 0</RPY> <Pos>0 0 0.15</Pos>
+	</Frame> -->
+
 	<Frame name="Tool" refframe="UR-6-85-5-A.TCP">
 		<RPY>90 0 0</RPY> <Pos> 0.0 0 0.0 </Pos>
 		<Drawable name="ToolUnit" refframe="UR-6-85-5-A.TCP">
@@ -30,7 +40,22 @@
 	<Frame name="GraspTCP" refframe="UR-6-85-5-A.TCP" type="Fixed">
 		<RPY>0 0 135</RPY> 
 		<Pos> 0.0 0.135 0.292 </Pos>
+		<!-- x z y  -->
 	</Frame> 
+	
+<!-- Cameras -->
+<!-- 
+<Frame name="Camera_Left" refframe="WORLD" type="Movable">
+	<Pos>0.2 1.033 1.325</Pos>
+	<RPY>0 0 -25</RPY>
+	<Property name="Camera" desc="[fovy,width,height]">50 640 480</Property>
+</Frame>
+
+<Frame name="Scanner25D" refframe="WORLD" type="Movable">
+	<Pos>0.2 1.033 1.325</Pos>
+	<RPY>0 0 -25</RPY>
+	<Property name="Scanner25D" desc="[fovy,width,height]">50 640 480</Property>
+</Frame> -->
 
 <Frame name="Camera_Left" refframe="WORLD" type="Movable">
 	<Pos>0.45 0.3475 0.5475</Pos>
@@ -54,10 +79,30 @@
 </Frame>
 
 <!-- inserting objects -->
-<Frame name="PuzzleReference" refframe="Container">
-	 <RPY> 0 0 0 </RPY> <Pos> 0.3 0.1 0.02 </Pos>
+<!-- <Frame name="PuzzleReference" refframe="Container">
+	 <RPY> 0 18 0 </RPY> <Pos> 0.2 0.32 0.05 </Pos>
 </Frame>
-<Include file="objects/puzzle/puzzle.xml" />
+<Include file="objects/puzzle/puzzle.xml" /> -->
+
+<Frame name="CreeperReference" refframe="Container">
+	<RPY> 0 0 0 </RPY> <Pos> 0.18 0.3 0.02 </Pos>
+</Frame>
+<Include file="objects/creeper/creeper.xml" />
+
+<Frame name="PanodilReference" refframe="Container">
+	<RPY> 0 -12 0 </RPY> <Pos> 0.15 0.3 0.02 </Pos>
+</Frame>
+<Include file="objects/panodil/panodil.xml" />
+
+<!-- <Frame name="ZendiumReference" refframe="Container">
+	<RPY> 0 12 0 </RPY> <Pos> 0.20 0.35 0.05 </Pos>
+</Frame>
+<Include file="objects/zendium/zendium.xml" /> -->
+
+<!-- <Frame name="KodimagnylReference" refframe="Container">
+	<RPY> 90 -30 12 </RPY> <Pos> 0.28 0.26 0.01 </Pos>
+</Frame>
+<Include file="objects/kodimagnyl/kodimagnyl.xml" /> -->
 
 <CollisionSetup file="SceneCollisionSetup.prox.xml" /> 
 

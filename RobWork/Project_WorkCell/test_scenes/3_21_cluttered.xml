@@ -79,15 +79,30 @@
 </Frame>
 
 <!-- inserting objects -->
-<Frame name="CreeperReference" refframe="Container">
+<!-- <Frame name="PuzzleReference" refframe="Container">
+	 <RPY> 0 18 0 </RPY> <Pos> 0.2 0.32 0.05 </Pos>
+</Frame>
+<Include file="objects/puzzle/puzzle.xml" /> -->
+
+<!-- <Frame name="CreeperReference" refframe="Container">
 	<RPY> 0 0 0 </RPY> <Pos> 0.18 0.3 0.02 </Pos>
 </Frame>
-<Include file="objects/creeper/creeper.xml" />
+<Include file="objects/creeper/creeper.xml" /> -->
 
 <Frame name="PanodilReference" refframe="Container">
-	<RPY> 0 -12 0 </RPY> <Pos> 0.15 0.3 0.02 </Pos>
+	<RPY> 0 0 0 </RPY> <Pos> 0.15 0.3 0.01 </Pos>
 </Frame>
 <Include file="objects/panodil/panodil.xml" />
+
+<Frame name="ZendiumReference" refframe="Container">
+	<RPY> 0 6.5 0 </RPY> <Pos> 0.20 0.35 0.028 </Pos>
+</Frame>
+<Include file="objects/zendium/zendium.xml" />
+
+<Frame name="KodimagnylReference" refframe="Container">
+	<RPY> 90 -22.5 6 </RPY> <Pos> 0.28 0.26 0.01 </Pos>
+</Frame>
+<Include file="objects/kodimagnyl/kodimagnyl.xml" />
 
 <CollisionSetup file="SceneCollisionSetup.prox.xml" /> 
 
