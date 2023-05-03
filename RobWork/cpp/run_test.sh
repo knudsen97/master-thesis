@@ -23,10 +23,10 @@ models=( \
 # "unet_resnet101_10_synthetic_4000_jit.pt" \
 # "unet_resnet101_10_l2_e-5_scse_jit.pt" \
 # "unet_resnet101_10_l2_e-5_scse_synthetic_data_4000_jit.pt" \
-"unet_resnet101_10_l2_e-3_scse_synthetic_data_4000_jit.pt" \
-"unet_resnet101_10_l2_e-3_adamax_synthetic_data_4000_jit.pt" \
-"unet_resnet101_10_bn_adamax_synthetic_data_4000_jit.pt" \
-"unet_resnet101_10_bn_l2_e-3_synthetic_data_4000_jit.pt" \
+# "unet_resnet101_10_l2_e-3_scse_synthetic_data_4000_jit.pt" \
+# "unet_resnet101_10_l2_e-3_adamax_synthetic_data_4000_jit.pt" \
+# "unet_resnet101_10_bn_adamax_synthetic_data_4000_jit.pt" \
+# "unet_resnet101_10_bn_l2_e-3_synthetic_data_4000_jit.pt" \
 "unet_resnet101_10_all_reg_jit.pt" \
 )
 
@@ -53,10 +53,10 @@ file_names=( \
 # "10_synthetic_4000" \
 # "10_l2_e-5_scse" \
 # "10_l2_e-5_scse_synthetic_data_4000" \
-"10_l2_e-3_scse_synthetic_data_4000" \
-"10_l2_e-3_adamax_synthetic_data_4000" \
-"10_bn_adamax_synthetic_data_4000" \
-"10_bn_l2_e-3_synthetic_data_4000" \
+# "10_l2_e-3_scse_synthetic_data_4000" \
+# "10_l2_e-3_adamax_synthetic_data_4000" \
+# "10_bn_adamax_synthetic_data_4000" \
+# "10_bn_l2_e-3_synthetic_data_4000" \
 "10_all_reg" \
 )
 
@@ -82,33 +82,40 @@ folder_names=( \
 # "10_synthetic_4000" \
 # "10_l2_e-5_scse" \
 # "10_l2_e-5_scse_synthetic_data_4000" \
-"10_l2_e-3_scse_synthetic_data_4000" \
-"10_l2_e-3_adamax_synthetic_data_4000" \
-"10_bn_adamax_synthetic_data_4000" \
-"10_bn_l2_e-3_synthetic_data_4000" \
+# "10_l2_e-3_scse_synthetic_data_4000" \
+# "10_l2_e-3_adamax_synthetic_data_4000" \
+# "10_bn_adamax_synthetic_data_4000" \
+# "10_bn_l2_e-3_synthetic_data_4000" \
 "10_all_reg" \
 )
 
 #define workcells
-workcells=( \
-"5_scattered.xml" \
-"5_cluttered.xml" \
-"4_scattered.xml" \
-"4_cluttered.xml" \
-"3_scattered.xml" \
-"3_cluttered.xml" \
-"2_scattered.xml" \
-"2_cluttered.xml" \
+# workcells=( \
+# "5_scattered.xml" \
+# "5_cluttered.xml" \
+# "4_scattered.xml" \
+# "4_cluttered.xml" \
+# "3_scattered.xml" \
+# "3_cluttered.xml" \
+# "2_scattered.xml" \
+# "2_cluttered.xml" \
 # "creeper_scene.xml" \
 # "puzzle_scene.xml" \
 # "kodimagnyl_scene.xml" \
 # # "original_scene.xml" \
 # "panodil_scene.xml" \
 # "zendium_scene.xml" \
-)
+# )
+
+# find all workcells
+workcells=()
+for file in ../Project_WorkCell/test_scenes/*.xml
+do
+    workcells+=($(basename $file))
+done
 
 
-result_file=testresults.csv
+result_file=10_all_reg.csv
 
 if test -f $result_file; then
     echo "$result_file exists."
