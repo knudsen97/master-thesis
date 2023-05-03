@@ -33,12 +33,12 @@ void load_extrinsics(const std::string &filename, cv::Mat &extrinsics);
 
 int main(int argc, char* argv[])
 {
-    // // Check if the camera is connected
-    // if (!open3d::t::io::RealSenseSensor::ListDevices())
-    // {
-    //     std::cerr << "No camera detected" << std::endl;
-    //     return -1;
-    // }
+    // Check if the camera is connected
+    if (!open3d::t::io::RealSenseSensor::ListDevices())
+    {
+        std::cerr << "No camera detected" << std::endl;
+        return -1;
+    }
 
     // Load workcell and device
     std::string wcFile = "../Project_WorkCell/Scene.wc.xml";
@@ -51,9 +51,19 @@ int main(int argc, char* argv[])
     rw::kinematics::Frame* camFrame = wc->findFrame("Camera_Left");
 
     // Connecting to UR
-    std::string ip = "172.17.0.2";
+    std::string ip = "177.22.22.2";
     ur_rtde::RTDEControlInterface UR5_control(ip);
     ur_rtde::RTDEReceiveInterface UR5_receive(ip);
+
+    // Get and print Qs
+    std::vector<double> Qs = UR5_receive.getActualQ();
+    std::cout << "Qs: ";
+    for (size_t i = 0; i < Qs.size(); i++)
+        std::cout << Qs[i] << " ";
+    std::cout << std::endl;
+
+    std::vector<double> Q_picture = {-1.15598, -1.71253, -1.58102, -4.56101, -1.56919, -0.76957};
+
     //-------------------------
     std::string model_file_name = "unet_resnet101_1_jit.pt";
     std::string model_name;
@@ -114,7 +124,7 @@ int main(int argc, char* argv[])
 
     // Load intrinsics and extrinsics from YAML files
     cv::FileStorage fs;
-    load_intrinsics("../config/calibration.yaml", intrinsics, dist_coeff);
+    load_intrinsics("../config/calibration.json", intrinsics, dist_coeff);
     if(!intrinsics.empty())
         sensor.setIntrinsics(intrinsics);
     else // use default intrinsics
@@ -188,7 +198,7 @@ int main(int argc, char* argv[])
             // Compute centers
             cv::Point center = cv::Point(400, 200);
             std::vector<cv::Point> centers;
-            processor.computeCenters(returned_image, centers, 10000);
+            processor.computeCenters(returned_image, centers, 20000);
 
             // If the inference was successful and there is at least one center
             if (!inference_sucess && centers.size() <= 0)
@@ -236,7 +246,8 @@ int main(int argc, char* argv[])
             processor.computeRotationMatrixFromNormal(normal, R_obj_cam);
 
             // manual flipping for test
-            center_3d.x = -center_3d.x;
+            // center_3d.x = -center_3d.x;
+            center_3d.y = -center_3d.y;
             center_3d.z = -center_3d.z;
 
             // Create transformation matrix of object in camera frame
@@ -269,7 +280,9 @@ int main(int argc, char* argv[])
             o3d_vis.Run();
 
             double valid_point_th = 0.001;
-            if(abs(point_3d(0) - center_3d.x) < valid_point_th && abs(point_3d(1) - center_3d.y) < valid_point_th)
+            auto debug_x = abs(point_3d(0) - center_3d.x);
+            auto debug_y = abs(point_3d(1) - center_3d.y);
+            if( debug_x > valid_point_th || debug_y > valid_point_th)
             {
                 std::cerr << "Invalid point found by inference" << std::endl;
                 break;
@@ -297,9 +310,9 @@ int main(int argc, char* argv[])
             Eigen::Matrix3d rotation_eigen;
             Eigen::Vector3d translation_eigen;
             sensor.getExtrinsics(extrinsics_eigen);
+
             rotation_eigen = extrinsics_eigen.block<3, 3>(0, 0);
             translation_eigen = extrinsics_eigen.block<3, 1>(0, 3);
-
             rw::math::Vector3D<double> translation_rw(translation_eigen);
             rw::math::Rotation3D<double> rotation_rw(rotation_eigen);
 
@@ -330,8 +343,8 @@ int main(int argc, char* argv[])
             MPsolver.setWorldTobject(frameWorldTObj);
             MPsolver.setSubgoalDistance(0.1);
 
-            MPsolver.calculateSubgoals();
-            path = MPsolver.getLinearPath(0.1);
+            path = MPsolver.calculateSubgoals();
+            // path = MPsolver.getLinearPath(0.5);
 
             if (!UR5_control.isConnected())
             {
@@ -348,8 +361,8 @@ int main(int argc, char* argv[])
                 time += 0.1;
             }
             
-            rw::loaders::PathLoader::storeTimedStatePath(*wc, replayPath, "../../Project_WorkCell/RRTPath.rwplay");
-            
+            rw::loaders::PathLoader::storeTimedStatePath(*wc, replayPath, "../Project_WorkCell/RRTPath.rwplay");
+            std::cout << "Path saved to RRTPath.rwplay" << std::endl;
             
         }
 
@@ -376,9 +389,17 @@ int main(int argc, char* argv[])
         {
             break;
         }
+
+        if (key == 'h')
+        {
+            // Home position
+            UR5_control.moveJ(Q_picture);
+        }
     }
 
     sensor.stopCapture();
+    UR5_control.disconnect();
+    UR5_receive.disconnect();
     
   
     return 0;
@@ -387,7 +408,7 @@ int main(int argc, char* argv[])
 
 void load_intrinsics(const std::string &filename, cv::Mat &intrinsics_out, cv::Mat &dist_coeff_out)
 {
-    cv::FileStorage fs("../config/calibration.yaml", cv::FileStorage::READ);
+    cv::FileStorage fs(filename, cv::FileStorage::READ);
     if (fs.isOpened())
     {
         fs["camera_matrix"] >> intrinsics_out;
