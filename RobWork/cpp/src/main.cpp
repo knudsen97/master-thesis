@@ -553,7 +553,7 @@ int main(int argc, char** argv)
         // o3d_vis.DestroyVisualizerWindow();
 
         double valid_point_th = 0.001;
-        if(abs(point_3d(0) - center_3d.x) < valid_point_th && abs(point_3d(1) - center_3d.y) < valid_point_th)
+        if(abs(point_3d(0) - center_3d.x) > valid_point_th || abs(point_3d(1) - center_3d.y) > valid_point_th)
         {
             std::cerr << "Invalid point found by inference" << std::endl;
             RealSense.close();
