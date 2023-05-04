@@ -144,9 +144,12 @@ void PredictionProcessor::computeRotationMatrixFromNormal(const Eigen::Vector3d 
 
     for (size_t i = 0; i < 3; i++)
     {
-        R(0,i) = u[i];
-        R(1,i) = v[i];
-        R(2,i) = n[i];
+        R(0, i) = u[i];
+        R(1, i) = v[i];
+        R(2, i) = n[i];
+        // R.at<double>(0, i) = u[i];
+        // R.at<double>(1, i) = v[i];
+        // R.at<double>(2, i) = n[i];
     }
 }
 
@@ -155,12 +158,24 @@ void PredictionProcessor::computeRotationMatrixFromNormal(const Eigen::Vector3d 
  * @param image The image to compute the centers from.
  * @param dest The vector to save the centers to.
 */
-void PredictionProcessor::computeCenters(const cv::Mat &image, std::vector<cv::Point2i> &dest, int max_radius)
+void PredictionProcessor::computeCenters(const cv::Mat &image, std::vector<cv::Point2i> &dest, int max_radius, int min_radius)
 {
     /* Isolate green channel */ 
     cv::Mat bgr[3];
     cv::split(image, bgr);
     cv::Mat greenOnly = bgr[1];
+    /* threshold green at 80% */
+    for (size_t i = 0; i < greenOnly.rows; i++)
+    {
+        for (size_t j = 0; j < greenOnly.cols; j++)
+        {
+            if (greenOnly.at<uint8_t>(i, j) > (int)round(0.6*255))
+                greenOnly.at<uint8_t>(i, j) = 255;
+            else
+                greenOnly.at<uint8_t>(i, j) = 0;
+        }
+    }
+    
 
     cv::Mat labels, stats, centroids;
     cv::connectedComponentsWithStats(greenOnly, labels, stats, centroids);
@@ -172,7 +187,7 @@ void PredictionProcessor::computeCenters(const cv::Mat &image, std::vector<cv::P
         int size = stats.at<int>(i, cv::CC_STAT_AREA);
         cv::Point2i centroidInt = cv::Point2i(centroids.at<double>(i, 0), centroids.at<double>(i, 1));
         std::cout << "(size, centroid): (" << size << ", " << centroidInt << ")" << std::endl;
-        if (size > max_radius)
+        if (size > max_radius || size < min_radius)
         {
             std::cout << "skipping" << std::endl;
             continue;
