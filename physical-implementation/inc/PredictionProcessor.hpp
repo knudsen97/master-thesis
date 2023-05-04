@@ -10,7 +10,7 @@
 #include <opencv2/calib3d.hpp>
 #include <opencv2/imgproc.hpp>
 
-// RobWork headers
+//include RobWork headers
 #include <rw/math.hpp>
 
 
@@ -40,7 +40,7 @@ public:
     int findIndexOfClosestPoint(const PointCloudPtr &pc, const cv::Point3d &p_cam, bool flip=true);
 
     void computeRotationMatrixFromNormal(const Eigen::Vector3d &normal, rw::math::Rotation3D<double> &R);
-    void computeCenters(const cv::Mat &image, std::vector<cv::Point2i> &dest, int max_radius=10000);
+    void computeCenters(const cv::Mat &image, std::vector<cv::Point2i> &dest, int max_radius=10000, int min_radius = 0);
 
     void outlierRemoval(PointCloudPtr &pc, double voxel_size, double std_dev, int nn_max);
 
