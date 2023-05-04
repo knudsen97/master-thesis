@@ -1,0 +1,20 @@
+<SerialDevice name="penGripper">
+<Frame name="Base">
+    <RPY> 0 0 0 </RPY> <Pos> 0 0 0</Pos> 
+</Frame>
+
+<!-- <Drawable name="PenHolder" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Polytope file="Pen_holder" />
+</Drawable> -->
+<Drawable name="PenAdapter" refframe="Base">
+  	<RPY> 0 0 180</RPY> <Pos> 0 0 0.155</Pos>
+    <Polytope file="Pen_adapter" />
+</Drawable>
+<Drawable name="UR5Adapter" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Polytope file="UR5_adapter" />
+</Drawable>
+
+
+</SerialDevice>

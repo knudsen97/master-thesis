@@ -38,12 +38,22 @@
 		<Pos> 0.0 0.135 0.292 </Pos>
 	</Frame>  -->
 
-	<Frame name="Tool" refframe="UR-6-85-5-A.TCP">
+	<!-- <Frame name="Tool" refframe="UR-6-85-5-A.TCP">
 		<RPY>45 0 0</RPY> <Pos> 0.0 0 -0.005 </Pos>
 		<Drawable name="ToolUnit" refframe="UR-6-85-5-A.TCP">
 			<Polytope file="penGripper/penGripper" />
 		</Drawable>
+	</Frame> -->
+	<Frame name="Tool" refframe="UR-6-85-5-A.TCP">
+		<RPY>0 0 0</RPY> <Pos> 0.0 0 -0.005 </Pos>
+	</Frame> 
+	<Include file="penGripper/penGripper.xml" />
+
+	<Frame name="CameraRefference" refframe="Camera_Left">
+		<RPY>0 0 0</RPY> <Pos>0 0 0</Pos>
 	</Frame>
+	<Include file="camera/camera.xml" />
+
 
 	<Frame name="GraspTCP" refframe="UR-6-85-5-A.TCP" type="Fixed">
 		<RPY>0 0 180</RPY>
@@ -52,7 +62,7 @@
 	</Frame> 
 
     <Frame name="Container" refframe="Table" type="Fixed">
-        <RPY>0 0 90</RPY> <Pos>-0.06 0.06 0.16</Pos>
+        <RPY>90 0 90</RPY> <Pos>-0.105 0.005 0.16</Pos>
         <Drawable name="Container" refframe="Container">
             <Polytope file="container/container" />
         </Drawable>
