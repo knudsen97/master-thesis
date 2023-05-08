@@ -47,7 +47,7 @@
 	<Frame name="Tool" refframe="UR-6-85-5-A.TCP">
 		<RPY>0 0 0</RPY> <Pos> 0.0 0 -0.005 </Pos>
 	</Frame> 
-	<Include file="penGripper/penGripper.xml" />
+	<Include file="pengripper/pengripper.xml" />
 
 	<Frame name="CameraRefference" refframe="Camera_Left">
 		<RPY>0 0 0</RPY> <Pos>0 0 0</Pos>
