@@ -1,9 +1,14 @@
 # Our Master Thesis - Optimal Sequence Picking Using Deep Learning
 This is the code used for a master thesis.
 
-<iframe src="images-and-videos/sequence-picking-images/image-loop.html" width="100%" height="500px"></iframe>
+
+<p float="left">
+  <img src="images-and-videos/prediction.gif" width="300" />
+  <img src="images-and-videos/inference.gif" width="300" /> 
+</p>
 
 ![SEQUENCE_PICKING](images-and-videos/grabber_with_no_grab.gif)
+
 
 ## Compiling the project
 ### Requirements
