@@ -1,0 +1,13 @@
+<CollisionSetup>
+    <Exclude>
+	<FramePair first="Table" second="Cylinder" />
+	<FramePair first="Table" second="Square" />
+	<FramePair first="Table" second="Botle" />
+	<FramePair first="UR-6-85-5-A.Joint5" second="WSG50RefFrame" />
+	<FramePair first="UR-6-85-5-A.Joint5" second="Tool" />	
+	<FramePair first="UR-6-85-5-A.TCP" second="Tool" />
+	<FramePair first="UR-6-85-5-A.Base" second="Table" />	
+	<FramePair first="Tool" second="Table" />
+
+   </Exclude>
+</CollisionSetup>

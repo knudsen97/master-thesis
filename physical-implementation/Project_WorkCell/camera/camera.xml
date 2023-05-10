@@ -1,0 +1,12 @@
+<SerialDevice name="camera">
+<Frame name="Base">
+    <RPY> 0 0 0 </RPY> <Pos> 0 0 0</Pos> 
+</Frame>
+
+<!-- Start drawing -->
+<Drawable name="cam" refframe="Base">
+  	<RPY> 45 0 0</RPY> <Pos> -0.018 0.018 0</Pos>
+    <Box x="0.05" y="0.05" z="0.01" />
+</Drawable>
+
+</SerialDevice>

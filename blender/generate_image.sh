@@ -15,8 +15,8 @@ Help()
 
 # Remove images
 rm_images () {
-    rm ./depth/*.png
-    rm ./image/*.png
+    rm ./depth-input/*.png
+    rm ./color-input/*.png
     rm ./label/*.png
 }
 
@@ -34,7 +34,7 @@ do
 done
 
 # Check if images exist, if so remove them
-FILE=./image/image1.png
+FILE=./color-input/image1.png
 if test -f "$FILE"; then
     rm_images
 fi
@@ -43,21 +43,23 @@ fi
 for i in $(seq 0 $(($images-1)))
 do
     blender -b synthetic_data_generator.blend --python /home/claus/Documents/sdu/9sem/master/code/master-thesis/blender/blender_script/blender_render_script.py -f 40,41
-    echo "$((($i+1)*2)) images generated"
+    green='\033[0;32m'
+    no_color='\033[0m'
+    printf "${green}$((($i+1)*2)) images generated${no_color}\n"
 
     # Remove nonsens image
-    rm ./depth/*41*.png
-    rm ./label/*41*.png
-    rm ./image/*40*.png
+    rm ./depth-input/*40*.png
+    rm ./label/*40*.png
+    rm ./color-input/*41*.png
 
     # Rename image
-    mv ./depth/*_L.png ./depth/depth$((i*2)).png
-    mv ./depth/*_R.png ./depth/depth$((i*2+1)).png
+    mv ./depth-input/*_L.png ./depth-input/depth$((i*2)).png
+    mv ./depth-input/*_R.png ./depth-input/depth$((i*2+1)).png
 
     mv ./label/*_L.png ./label/label$((i*2)).png
     mv ./label/*_R.png ./label/label$((i*2+1)).png
 
-    mv ./image/*_L.png ./image/image$((i*2)).png
-    mv ./image/*_R.png ./image/image$((i*2+1)).png
+    mv ./color-input/*_L.png ./color-input/image$((i*2)).png
+    mv ./color-input/*_R.png ./color-input/image$((i*2+1)).png
 
 done

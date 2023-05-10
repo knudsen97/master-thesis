@@ -1,0 +1,555 @@
+<SerialDevice name="zendium">
+<Frame name="Base">
+    <RPY> 0 0 0 </RPY> <Pos> 0 0 0</Pos> 
+</Frame>
+<!-- define color -->
+<Define id="white">
+    <RGB>1 1 1</RGB>
+</Define>
+<Define id="red">
+    <RGB>0.70 0.14 0.20</RGB>
+</Define>
+<Define id="green">
+    <RGB>0.46 0.67 0.33</RGB>
+</Define>
+<Define id="blue">
+    <RGB>0.28 0.41 0.69</RGB>
+</Define>
+<Define id="dark_blue">
+    <RGB>0.12 0.10 0.23</RGB>
+</Define>
+<Define id="gray">
+    <RGB>0.45 0.45 0.47</RGB>
+</Define>
+<!-- box body -->
+<Drawable name="body" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="zendium_zendium v2_Body_box" />
+</Drawable>
+<!-- count 1-6 -->
+<Drawable name="count1" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_count (1)" />
+</Drawable>
+<Drawable name="count2" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_count (2)" />
+</Drawable>
+<Drawable name="count3" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_count (3)" />
+</Drawable>
+<Drawable name="count4" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_count (4)" />
+</Drawable>
+<Drawable name="count5" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_count (5)" />
+</Drawable>
+<Drawable name="count6" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_count (6)" />
+</Drawable>
+<!-- green body text 1-22 -->
+<Drawable name="bodytext1" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="zendium_zendium v2_green body text (1)" />
+</Drawable>
+<Drawable name="bodytext2" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="zendium_zendium v2_green body text (2)" />
+</Drawable>
+<Drawable name="bodytext3" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="zendium_zendium v2_green body text (3)" />
+</Drawable>
+<Drawable name="bodytext4" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="zendium_zendium v2_green body text (4)" />
+</Drawable>
+<Drawable name="bodytext5" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="zendium_zendium v2_green body text (5)" />
+</Drawable>
+<Drawable name="bodytext6" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="zendium_zendium v2_green body text (6)" />
+</Drawable>
+<Drawable name="bodytext7" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="zendium_zendium v2_green body text (7)" />
+</Drawable>
+<Drawable name="bodytext8" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="zendium_zendium v2_green body text (8)" />
+</Drawable>
+<Drawable name="bodytext9" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="zendium_zendium v2_green body text (9)" />
+</Drawable>
+<Drawable name="bodytext10" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="zendium_zendium v2_green body text (10)" />
+</Drawable>
+<Drawable name="bodytext11" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="zendium_zendium v2_green body text (11)" />
+</Drawable>
+<Drawable name="bodytext12" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="zendium_zendium v2_green body text (12)" />
+</Drawable>
+<Drawable name="bodytext13" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="zendium_zendium v2_green body text (13)" />
+</Drawable>
+<Drawable name="bodytext14" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="zendium_zendium v2_green body text (14)" />
+</Drawable>
+<Drawable name="bodytext15" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="zendium_zendium v2_green body text (15)" />
+</Drawable>
+<Drawable name="bodytext16" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="zendium_zendium v2_green body text (16)" />
+</Drawable>
+<Drawable name="bodytext17" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="zendium_zendium v2_green body text (17)" />
+</Drawable>
+<Drawable name="bodytext18" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="zendium_zendium v2_green body text (18)" />
+</Drawable>
+<Drawable name="bodytext19" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="zendium_zendium v2_green body text (19)" />
+</Drawable>
+<Drawable name="bodytext20" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="zendium_zendium v2_green body text (20)" />
+</Drawable>
+<Drawable name="bodytext21" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="zendium_zendium v2_green body text (21)" />
+</Drawable>
+<Drawable name="bodytext22" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="zendium_zendium v2_green body text (22)" />
+</Drawable>
+<!-- logo blue 1-7 -->
+<Drawable name="logoblue1" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="blue" />
+    <Polytope file="zendium_zendium v2_logo blue (1)" />
+</Drawable>
+<Drawable name="logoblue2" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="blue" />
+    <Polytope file="zendium_zendium v2_logo blue (2)" />
+</Drawable>
+<Drawable name="logoblue3" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="blue" />
+    <Polytope file="zendium_zendium v2_logo blue (3)" />
+</Drawable>
+<Drawable name="logoblue4" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="blue" />
+    <Polytope file="zendium_zendium v2_logo blue (4)" />
+</Drawable>
+<Drawable name="logoblue5" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="blue" />
+    <Polytope file="zendium_zendium v2_logo blue (5)" />
+</Drawable>
+<Drawable name="logoblue6" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="blue" />
+    <Polytope file="zendium_zendium v2_logo blue (6)" />
+</Drawable>
+<Drawable name="logoblue7" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="blue" />
+    <Polytope file="zendium_zendium v2_logo blue (7)" />
+</Drawable>
+<!-- logo green 1-2 -->
+<Drawable name="logogreen1" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id ="green" />
+    <Polytope file="zendium_zendium v2_logo green (1)" />
+</Drawable>
+<Drawable name="logogreen2" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id ="green" />
+    <Polytope file="zendium_zendium v2_logo green (2)" />
+</Drawable>
+<!-- logo red 1 -->
+<Drawable name="logored1" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id ="red" />
+    <Polytope file="zendium_zendium v2_logo red (1)" />
+</Drawable>
+<!-- past type 1-7 -->
+<Drawable name="pasttype1" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_past type (1)" />
+</Drawable>
+<Drawable name="pasttype2" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_past type (2)" />
+</Drawable>
+<Drawable name="pasttype3" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_past type (3)" />
+</Drawable>
+<Drawable name="pasttype4" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_past type (4)" />
+</Drawable>
+<Drawable name="pasttype5" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_past type (5)" />
+</Drawable>
+<Drawable name="pasttype6" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_past type (6)" />
+</Drawable>
+<Drawable name="pasttype7" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_past type (7)" />
+</Drawable>
+<!-- rec 1-20 -->
+<Drawable name="rec1" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_rec (1)" />
+</Drawable>
+<Drawable name="rec2" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_rec (2)" />
+</Drawable>
+<Drawable name="rec3" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_rec (3)" />
+</Drawable>
+<Drawable name="rec4" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_rec (4)" />
+</Drawable>
+<Drawable name="rec5" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_rec (5)" />
+</Drawable>
+<Drawable name="rec6" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_rec (6)" />
+</Drawable>
+<Drawable name="rec7" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_rec (7)" />
+</Drawable>
+<Drawable name="rec8" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_rec (8)" />
+</Drawable>
+<Drawable name="rec9" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_rec (9)" />
+</Drawable>
+<Drawable name="rec10" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_rec (10)" />
+</Drawable>
+<Drawable name="rec11" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_rec (11)" />
+</Drawable>
+<Drawable name="rec12" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_rec (12)" />
+</Drawable>
+<Drawable name="rec13" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_rec (13)" />
+</Drawable>
+<Drawable name="rec14" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_rec (14)" />
+</Drawable>
+<Drawable name="rec15" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_rec (15)" />
+</Drawable>
+<Drawable name="rec16" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_rec (16)" />
+</Drawable>
+<Drawable name="rec17" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_rec (17)" />
+</Drawable>
+<Drawable name="rec18" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_rec (18)" />
+</Drawable>
+<Drawable name="rec19" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_rec (19)" />
+</Drawable>
+<Drawable name="rec20" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_rec (20)" />
+</Drawable>
+<!-- sub title 1-30 -->
+<Drawable name="sub_title1" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="gray" />
+    <Polytope file="zendium_zendium v2_sub title (1)" />
+</Drawable>
+<Drawable name="sub_title2" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="gray" />
+    <Polytope file="zendium_zendium v2_sub title (2)" />
+</Drawable>
+<Drawable name="sub_title3" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="gray" />
+    <Polytope file="zendium_zendium v2_sub title (3)" />
+</Drawable>
+<Drawable name="sub_title4" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="gray" />
+    <Polytope file="zendium_zendium v2_sub title (4)" />
+</Drawable>
+<Drawable name="sub_title5" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="gray" />
+    <Polytope file="zendium_zendium v2_sub title (5)" />
+</Drawable>
+<Drawable name="sub_title6" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="gray" />
+    <Polytope file="zendium_zendium v2_sub title (6)" />
+</Drawable>
+<Drawable name="sub_title7" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="gray" />
+    <Polytope file="zendium_zendium v2_sub title (7)" />
+</Drawable>
+<Drawable name="sub_title8" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="gray" />
+    <Polytope file="zendium_zendium v2_sub title (8)" />
+</Drawable>
+<Drawable name="sub_title9" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="gray" />
+    <Polytope file="zendium_zendium v2_sub title (9)" />
+</Drawable>
+<Drawable name="sub_title10" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="gray" />
+    <Polytope file="zendium_zendium v2_sub title (10)" />
+</Drawable>
+<Drawable name="sub_title11" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="gray" />
+    <Polytope file="zendium_zendium v2_sub title (11)" />
+</Drawable>
+<Drawable name="sub_title12" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="gray" />
+    <Polytope file="zendium_zendium v2_sub title (12)" />
+</Drawable>
+<Drawable name="sub_title13" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="gray" />
+    <Polytope file="zendium_zendium v2_sub title (13)" />
+</Drawable>
+<Drawable name="sub_title14" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="gray" />
+    <Polytope file="zendium_zendium v2_sub title (14)" />
+</Drawable>
+<Drawable name="sub_title15" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="gray" />
+    <Polytope file="zendium_zendium v2_sub title (15)" />
+</Drawable>
+<Drawable name="sub_title16" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="gray" />
+    <Polytope file="zendium_zendium v2_sub title (16)" />
+</Drawable>
+<Drawable name="sub_title17" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="gray" />
+    <Polytope file="zendium_zendium v2_sub title (17)" />
+</Drawable>
+<Drawable name="sub_title18" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="gray" />
+    <Polytope file="zendium_zendium v2_sub title (18)" />
+</Drawable>
+<Drawable name="sub_title19" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="gray" />
+    <Polytope file="zendium_zendium v2_sub title (19)" />
+</Drawable>
+<Drawable name="sub_title20" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="gray" />
+    <Polytope file="zendium_zendium v2_sub title (20)" />
+</Drawable>
+<Drawable name="sub_title21" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="gray" />
+    <Polytope file="zendium_zendium v2_sub title (21)" />
+</Drawable>
+<Drawable name="sub_title22" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="gray" />
+    <Polytope file="zendium_zendium v2_sub title (22)" />
+</Drawable>
+<Drawable name="sub_title23" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="gray" />
+    <Polytope file="zendium_zendium v2_sub title (23)" />
+</Drawable>
+<Drawable name="sub_title24" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="gray" />
+    <Polytope file="zendium_zendium v2_sub title (24)" />
+</Drawable>
+<Drawable name="sub_title25" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="gray" />
+    <Polytope file="zendium_zendium v2_sub title (25)" />
+</Drawable>
+<Drawable name="sub_title26" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="gray" />
+    <Polytope file="zendium_zendium v2_sub title (26)" />
+</Drawable>
+<Drawable name="sub_title27" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="gray" />
+    <Polytope file="zendium_zendium v2_sub title (27)" />
+</Drawable>
+<Drawable name="sub_title28" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="gray" />
+    <Polytope file="zendium_zendium v2_sub title (28)" />
+</Drawable>
+<Drawable name="sub_title29" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="gray" />
+    <Polytope file="zendium_zendium v2_sub title (29)" />
+</Drawable>
+<Drawable name="sub_title30" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="gray" />
+    <Polytope file="zendium_zendium v2_sub title (30)" />
+</Drawable>
+<!-- title 1-8 -->
+<Drawable name="title1" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_title (1)" />
+</Drawable>
+<Drawable name="title2" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_title (2)" />
+</Drawable>
+<Drawable name="title3" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_title (3)" />
+</Drawable>
+<Drawable name="title4" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_title (4)" />
+</Drawable>
+<Drawable name="title5" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_title (5)" />
+</Drawable>
+<Drawable name="title6" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_title (6)" />
+</Drawable>
+<Drawable name="title7" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_title (7)" />
+</Drawable>
+<Drawable name="title8" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="zendium_zendium v2_title (8)" />
+</Drawable>
+
+</SerialDevice>

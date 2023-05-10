@@ -1,20 +1,27 @@
 # Other cutsom things 
 *.vscode/
+.vscode/*
+*/.vscode/*
 *.pth
 *images/
 *image/
 *depth/
 *labels/
 *label/
+*depth-input/
+*color-input/
 
 # Ignore dataset
 _data*
 _data*/
+*data*/
 
 # Ignore hidden folders
 _*
+=========
 .vscode/*
 */.vscode/*
+>>>>>>>>> Temporary merge branch 2
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -185,3 +192,35 @@ data/
 data_synthetic
 data_synthetic/
 *.tar
+*color-input/
+*depth-input/
+*label/
+
+
+RobWork/EnabledRoboticsWorkcell/
+
+
+# Ignore models
+*pt
+*pth
+
+# Ignore hidden files
+.*
+_*
+
+*/figures/
+/figures/
+/figures
+*.pdf
+
+*.asv
+*.yaml
+*.json
+
+.vscode/
+.vscode/*
+*/.vscode/*
+
+
+# Ignore rwsettings
+*rwsettings*

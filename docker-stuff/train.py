@@ -15,15 +15,20 @@ import argparse
 
 # Create custom dataset class
 class SegNetDataset(Dataset):
-    def __init__(self, data_dir, synthetic, transform=None, transform_augmentations=None):
+    def __init__(self, data_dir, synthetic, transform=None, synthetic_data_count=1000):#, transform_augmentations=None):
         self.synthetic = synthetic
         self.data_dir = data_dir
+        self.synthetic_data_count = synthetic_data_count
 
         self.transform = transform
-        self.transform_augmentations = transform_augmentations
+        # self.transform_augmentations = transform_augmentations
 
         self.images = sorted(os.listdir(os.path.join(data_dir, 'color-input')))
         self.masks  = sorted(os.listdir(os.path.join(data_dir, 'label')))
+
+        if self.synthetic:
+            self.images = self.images[:self.synthetic_data_count]
+            self.masks = self.masks[:self.synthetic_data_count]
         
     def __len__(self):
         return len(self.images)
@@ -60,15 +65,42 @@ class SegNetDataset(Dataset):
             image = self.transform(image)
             mask = self.transform(mask)
             target_mask = self.transform(target_mask)
-        if self.transform_augmentations:
-            image = self.transform_augmentations(image)
+        # if self.transform_augmentations:
+        #     image = self.transform_augmentations(image)
+
+        # # Permute the image dimensions to (H, W, C)
+        # image = image.permute(1, 2, 0)
+        # mask = mask.permute(1, 2, 0)
+        # target_mask = target_mask.permute(1, 2, 0)
+
+        return image, target_mask, mask
+
+class MapDataset(Dataset):
+    """
+    Given a dataset, creates a dataset which applies a mapping function
+    to its items (lazily, only when an item is called).
+
+    Note that data is not cloned/copied from the initial dataset.
+    """
+    def __init__(self, dataset, augmentations):
+        self.dataset = dataset
+        self.augmentations = augmentations
+
+    def __getitem__(self, index):
+        # print(self.dataset[index])
+        image, target_mask, mask = self.dataset[index]
+        if self.augmentations is not None:
+          image = self.augmentations(image)
 
         # Permute the image dimensions to (H, W, C)
         image = image.permute(1, 2, 0)
         mask = mask.permute(1, 2, 0)
         target_mask = target_mask.permute(1, 2, 0)
-
         return image, target_mask, mask
+
+    def __len__(self):
+        return len(self.dataset)
+
 
 # Define function to calculate accuracy
 def accuracy(outputs, targets):
@@ -152,47 +184,127 @@ def test(model, test_loader, criterion, device):
 
 def arg_parser():
     # Default values for command-line arguments
-    epochs_default = 30
+    epochs_default = 50
     encoder_depth_default = 3
-    lr_default = 0.00001
+    lr_default = 1e-04
     batch_size_default = 4
-    l2_penalization_default = 0.01
-    id_default = 0
+    l2_penalization_default = 0.0
+    decoder_use_batchnorm = False
+    decoder_attention_type = None
+    optimizer_type_default = "Adam"
+    id_default = '0'
+    synthetic_data_count_default = 1000
+
     # Parse command-line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('-epochs', type=int, default=epochs_default, help='Number of epochs')
     parser.add_argument('-encoder_depth', type=int, default=encoder_depth_default, help='Depth of encoder')
     parser.add_argument('-lr', type=float, default=lr_default, help='Learning rate')
-    parser.add_argument('-batch_size', type=float, default=batch_size_default, help='Batch size')
+    parser.add_argument('-batch_size', type=int, default=batch_size_default, help='Batch size')
+    parser.add_argument('-synthetic_data_count', type=int, default=synthetic_data_count_default, help='Number of synthetic data samples to use')
     parser.add_argument('-l2', type=float, default=l2_penalization_default, help='L2 penalization (weight decay)')
-    parser.add_argument('-id', type=int, default=id_default, help='id used for saving the results')
+    parser.add_argument('-decoder_use_batchnorm', type=bool, default=decoder_use_batchnorm, help='Use batchnorm in decoder')
+    parser.add_argument('-decoder_attention_type', type=str, default=decoder_attention_type, help='Attention type in decoder')
+    parser.add_argument('-optimizer', type=str, default=optimizer_type_default, help='Type of optimizer: Adam, Adamax')
+    parser.add_argument('-id', type=str, default=id_default, help='id used for saving the results')
+
 
     return parser.parse_args()
+
+class EarlyStopper():
+    def __init__(self, patience=1, min_delta=0):
+        self.patience = patience
+        self.min_delta = min_delta
+        self.counter = 0
+        self.min_validation_loss = np.inf
+
+    def early_stop(self, validation_loss):
+        if validation_loss < self.min_validation_loss:
+            self.min_validation_loss = validation_loss
+            self.counter = 0
+        elif validation_loss > (self.min_validation_loss + self.min_delta):
+            self.counter += 1
+            if self.counter >= self.patience:
+                return True
+        return False
+
+def load_model(depth, device, decoder_use_batchnorm, decoder_attention_type):
+    if depth==3:
+        decoder_channels = (64, 32, 16)
+    elif depth==4:
+        decoder_channels = (128, 64, 32, 16)
+    elif depth==5:
+        decoder_channels = (256, 128, 64, 32, 16)
+    else:
+        print("Choose a depth between 3 and 5! Using default 3.")
+        decoder_channels = (64, 32, 16)
+        depth = 3
+
+    # Get ResNet101 pretrained model to use as encoder
+    model = segmentation_models_pytorch.Unet(encoder_name='resnet101', 
+                                            encoder_weights='imagenet', 
+                                            classes=3, 
+                                            activation=None,
+                                            encoder_depth=depth, 
+                                            decoder_channels = decoder_channels,
+                                            decoder_use_batchnorm = decoder_use_batchnorm,
+                                            decoder_attention_type = decoder_attention_type,
+                                            )
+
+    # print(model)
+    model.encoder.train = False
+    model.decoder.train = False
+    model.segmentation_head.train = True
+    # Move model to GPU
+    model.to(device) #1GB GPU
+    return model
+
+def get_criterion():
+    criterion = nn.CrossEntropyLoss()
+    return criterion
+
+def get_optimizer(model, lr=1e-04, l2_penal=0.0, optimizer_name="Adam"):
+    # Define optimizer
+    if optimizer_name == "Adam":
+        optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=l2_penal)
+    elif optimizer_name == "Adamax":
+        optimizer = torch.optim.Adamax(model.parameters(), lr=lr, weight_decay=l2_penal)
+    return optimizer
 
 def main():
     args = arg_parser()
 
     print(f"Using the following hyperparameters: {args}")
-
-    # input_size = (480, 640)
+   
+    # ImageNet mean and std: (Found using the bottom function)
+    mean =  [0.485, 0.456, 0.406] #[0.4543, 0.3444, 0.2966]#[0.4352, 0.3342, 0.2835] 
+    std = [0.229, 0.224, 0.225]#[0.2198, 0.2415, 0.2423]#[0.2291, 0.2290, 0.2181]
     scaled_size = (128, 160)
+    
+    # Transforms to be applied to all images, masks and target masks
     transforms = tf.Compose([
         tf.ToTensor(), # This also converts from 0,255 to 0,1
         tf.Resize(scaled_size),
     ])
 
-    augmentations = "  Resize((128,160))\n  ColorJitter((0.7,1), (1), (0.7,1.3), (-0.1,0.1))\n   GaussianBlur(3)"
-    transform_augmentations = tf.Compose([
-        tf.ColorJitter((0.7,1), (1), (0.7,1.3), (-0.1,0.1)),
+    # Augmentations for train and test images
+    transform_augmentations_train = tf.Compose([
+        tf.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
         tf.GaussianBlur(3),
+        tf.Normalize(mean, std)
+    ])
+    transform_augmentations_test = tf.Compose([
+        tf.GaussianBlur(3),
+        tf.Normalize(mean, std)
     ])
 
 
     # Create dataset
     data_dir = 'data'
     data_syn_dir = 'data_synthetic'
-    dataset_real = SegNetDataset(data_dir=data_dir, synthetic=False, transform=transforms, transform_augmentations=transform_augmentations)
-    dataset_syn = SegNetDataset(data_dir=data_syn_dir, synthetic=True, transform=transforms, transform_augmentations=transform_augmentations)
+    synthetic_data_count = args.synthetic_data_count
+    dataset_real = SegNetDataset(data_dir=data_dir, synthetic=False, transform=transforms, synthetic_data_count=synthetic_data_count)#, transform_augmentations=transform_augmentations)
+    dataset_syn = SegNetDataset(data_dir=data_syn_dir, synthetic=True, transform=transforms, synthetic_data_count=synthetic_data_count)#, transform_augmentations=transform_augmentations)
 
     # Split dataset into train and test
     real_train_data, real_test_data = data.random_split(dataset_real, [int(len(dataset_real)*0.8), len(dataset_real)-int(len(dataset_real)*0.8)])
@@ -201,6 +313,10 @@ def main():
     # Concatenate the datasets
     train_data = data.ConcatDataset([real_train_data, synthetic_train_data])
     test_data  = data.ConcatDataset([real_test_data, synthetic_test_data])
+
+    # Create new datasets with augmentations for training and nothing for test/validation.
+    train_data = MapDataset(train_data, augmentations=transform_augmentations_train)
+    test_data = MapDataset(test_data, augmentations=transform_augmentations_test)
 
     # Create dataloaders
     batch_size = args.batch_size
@@ -217,35 +333,28 @@ def main():
     print("Using device: ", device)
     assert device == torch.device("cuda:0") 
 
+    # Get parameters for model and load model
     encoder_depth = args.encoder_depth
-    decoder_channels = "(256, 128, 64)"
+    decoder_use_batchnorm = args.decoder_use_batchnorm
+    decoder_attention_type = args.decoder_attention_type
+    model = load_model(depth=encoder_depth, device=device, decoder_use_batchnorm=decoder_use_batchnorm, decoder_attention_type=decoder_attention_type)
 
-    # Get ResNet101 pretrained model to use as encoder
-    model = segmentation_models_pytorch.Unet(encoder_name='resnet101', 
-                                            encoder_weights='imagenet', 
-                                            classes=3, 
-                                            activation=None,
-                                            encoder_depth=encoder_depth, 
-                                            decoder_channels = (256, 128, 64),
-                                            decoder_use_batchnorm = True,
-                                            decoder_attention_type = "scse",
-                                            )
+    print("batchnorm: ", decoder_use_batchnorm)
 
-    # print(model)
-    model.encoder.train = False
-    model.decoder.train = True
-    model.segmentation_head.train = True
-
-    # Move model to GPU
-    model.to(device) #1GB GPU
 
     # Define optimizer
-    criterion = nn.CrossEntropyLoss()
+    criterion = get_criterion()
+    # criterion = nn.CrossEntropyLoss()
+
+    # Define optimizer
     l2_penalization = args.l2
     lr = args.lr
+    optimizer_type = args.optimizer
+    optimizer = get_optimizer(model, lr, l2_penalization, optimizer_type)
     # optimizer_name = "Adamax"
-    optimizer = torch.optim.Adamax(model.parameters(), lr=lr, weight_decay=l2_penalization)
-    
+    # optimizer = torch.optim.Adamax(model.parameters(), lr=lr, weight_decay=l2_penalization)
+    # optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=l2_penalization)
+
 
     # Train model
     epochs = args.epochs
@@ -253,8 +362,13 @@ def main():
     train_recall, train_precision = [], []
     test_recall, test_precision   = [], []
 
+
+    # Early stopper
+    early_stopper = EarlyStopper(patience=5, min_delta=0.01)
+
+
     # Define the file path and open the CSV file in append mode and save the results in results folder
-    csv_file_path = f'results/results{args.id}.csv'
+    csv_file_path = f'results/results_{args.id}.csv'
     with open(csv_file_path, 'w', newline='') as csv_file:
         writer = csv.writer(csv_file)
 
@@ -287,7 +401,22 @@ def main():
             # Print
             print(f'Epoch {epoch}, test loss: {test_losses[-1]:.4f}, test recall/precision: {test_recall[-1]:.4f}/{test_precision[-1]:.4f}')
             writer.writerow([train_losses[-1], test_losses[-1], train_recall[-1].item(), train_precision[-1].item(), test_recall[-1].item(), test_precision[-1].item()])
+            
+            if early_stopper.early_stop(test_losses[-1]):
+                break
+    
+    
+    # Save the model
+    torch.save(model.state_dict(), f'models/unet_resnet101_{args.id}.pt')
 
+    # Save model to load in c++
+    try:
+        x = torch.randn(1,3,128,160)
+        traced_script_module = torch.jit.trace(model, x)
+        traced_script_module.save(f'jit_models/unet_resnet101_{args.id}.pt')
+        # torch.jit.save(torch.jit.script(model), f'jit_models/unet_resnet101_{args.id}.pt')
+    except:
+        print("Could not save model with jit.")
 
 
 

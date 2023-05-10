@@ -1,0 +1,255 @@
+<SerialDevice name="kodimagnyl">
+<Frame name="Base">
+    <RPY> 0 0 0 </RPY> <Pos> 0 0 0</Pos> 
+</Frame>
+<!-- define color -->
+<Define id="white">
+    <RGB>1 1 1</RGB>
+</Define>
+<Define id="green">
+    <RGB>0 0.44 0.1</RGB>
+</Define>
+<Define id="dark_blue">
+    <RGB>0 0.06 0.24</RGB>
+</Define>
+<!-- box body -->
+<Drawable name="body_white" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_white" />
+</Drawable>
+<Drawable name="body_green" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="green" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_green" />
+</Drawable>
+<Drawable name="body_green_fade" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="green" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_green fade" />
+</Drawable>
+<Drawable name="dot_over_i" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="green" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_dot over i" />
+</Drawable>
+<!-- subtitle 1-17 -->
+<Drawable name="subtitle_1" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_subtitle (1)" />
+</Drawable>
+<Drawable name="subtitle_2" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_subtitle (2)" />
+</Drawable>
+<Drawable name="subtitle_3" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_subtitle (3)" />
+</Drawable>
+<Drawable name="subtitle_4" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_subtitle (4)" />
+</Drawable>
+<Drawable name="subtitle_5" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_subtitle (5)" />
+</Drawable>
+<Drawable name="subtitle_6" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_subtitle (6)" />
+</Drawable>
+<Drawable name="subtitle_7" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_subtitle (7)" />
+</Drawable>
+<Drawable name="subtitle_8" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_subtitle (8)" />
+</Drawable>
+<Drawable name="subtitle_9" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_subtitle (9)" />
+</Drawable>
+<Drawable name="subtitle_10" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_subtitle (10)" />
+</Drawable>
+<Drawable name="subtitle_11" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_subtitle (11)" />
+</Drawable>
+<Drawable name="subtitle_12" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_subtitle (12)" />
+</Drawable>
+<Drawable name="subtitle_13" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_subtitle (13)" />
+</Drawable>
+<Drawable name="subtitle_14" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_subtitle (14)" />
+</Drawable>
+<Drawable name="subtitle_15" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_subtitle (15)" />
+</Drawable>
+<Drawable name="subtitle_16" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_subtitle (16)" />
+</Drawable>
+<Drawable name="subtitle_17" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_subtitle (17)" />
+</Drawable>
+<!-- title 1-10 -->
+<Drawable name="title_1" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_title (1)" />
+</Drawable>
+<Drawable name="title_2" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_title (2)" />
+</Drawable>
+<Drawable name="title_3" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_title (3)" />
+</Drawable>
+<Drawable name="title_4" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_title (4)" />
+</Drawable>
+<Drawable name="title_5" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_title (5)" />
+</Drawable>
+<Drawable name="title_6" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_title (6)" />
+</Drawable>
+<Drawable name="title_7" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_title (7)" />
+</Drawable>
+<Drawable name="title_8" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_title (8)" />
+</Drawable>
+<Drawable name="title_9" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_title (9)" />
+</Drawable>
+<Drawable name="title_10" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="dark_blue" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_title (10)" />
+</Drawable>
+<!-- top text 1-16 -->
+<Drawable name="top_text_1" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_top text (1)" />
+</Drawable>
+<Drawable name="top_text_2" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_top text (2)" />
+</Drawable>
+<Drawable name="top_text_3" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_top text (3)" />
+</Drawable>
+<Drawable name="top_text_4" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_top text (4)" />
+</Drawable>
+<Drawable name="top_text_5" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_top text (5)" />
+</Drawable>
+<Drawable name="top_text_6" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_top text (6)" />
+</Drawable>
+<Drawable name="top_text_7" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_top text (7)" />
+</Drawable>
+<Drawable name="top_text_8" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_top text (8)" />
+</Drawable>
+<Drawable name="top_text_9" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_top text (9)" />
+</Drawable>
+<Drawable name="top_text_10" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_top text (10)" />
+</Drawable>
+<Drawable name="top_text_11" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_top text (11)" />
+</Drawable>
+<Drawable name="top_text_12" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_top text (12)" />
+</Drawable>
+<Drawable name="top_text_13" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_top text (13)" />
+</Drawable>
+<Drawable name="top_text_14" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_top text (14)" />
+</Drawable>
+<Drawable name="top_text_15" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_top text (15)" />
+</Drawable>
+<Drawable name="top_text_16" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Use id="white" />
+    <Polytope file="kodimagnyl_kodimagnyl v1_top text (16)" />
+</Drawable>
+
+</SerialDevice>

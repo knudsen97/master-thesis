@@ -1,0 +1,16 @@
+<SerialDevice name="pengripper">
+<Frame name="Base">
+    <RPY> 0 0 0 </RPY> <Pos> 0 0 0</Pos> 
+</Frame>
+
+<Drawable name="penadapter" refframe="Base">
+  	<RPY> 0 0 180</RPY> <Pos> 0 0 0.155</Pos>
+    <Polytope file="penadapter" />
+</Drawable>
+<Drawable name="ur5adapter" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <Polytope file="ur5adapter" />
+</Drawable>
+
+
+</SerialDevice>

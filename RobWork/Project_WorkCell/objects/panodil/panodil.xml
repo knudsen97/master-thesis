@@ -1,0 +1,144 @@
+<SerialDevice name="panodil">
+<Frame name="Base">
+    <RPY> 0 0 0 </RPY> <Pos> 0 0 0</Pos> 
+</Frame>
+<Drawable name="body" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <RGB>1 1 1 </RGB>
+    <Polytope file="panodil v1_panodil v1_Body" />
+</Drawable>
+<!-- title -->
+<Drawable name="titlebox" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <RGB>0.11 0.13 0.27</RGB>
+    <Polytope file="panodil v1_panodil v1_Body_titlebox" />
+</Drawable>
+<Drawable name="title1" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <RGB>1 1 1</RGB>
+    <Polytope file="panodil v1_panodil v1_Body_title1" />
+</Drawable>
+<Drawable name="title2" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <RGB>1 1 1</RGB>
+    <Polytope file="panodil v1_panodil v1_Body_title2" />
+</Drawable>
+<Drawable name="title3" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <RGB>1 1 1</RGB>
+    <Polytope file="panodil v1_panodil v1_Body_title3" />
+</Drawable>
+<Drawable name="title4" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <RGB>1 1 1</RGB>
+    <Polytope file="panodil v1_panodil v1_Body_title4" />
+</Drawable>
+<Drawable name="title5" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <RGB>1 1 1</RGB>
+    <Polytope file="panodil v1_panodil v1_Body_title5" />
+</Drawable>
+<Drawable name="title6" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <RGB>1 1 1</RGB>
+    <Polytope file="panodil v1_panodil v1_Body_title6" />
+</Drawable>
+<Drawable name="title7" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <RGB>1 1 1</RGB>
+    <Polytope file="panodil v1_panodil v1_Body_title7" />
+</Drawable>
+<Drawable name="title8" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <RGB>1 1 1</RGB>
+    <Polytope file="panodil v1_panodil v1_Body_title8" />
+</Drawable>
+
+<!-- info -->
+<Drawable name="infobox" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <RGB>0 0.64 0.51</RGB>
+    <Polytope file="panodil v1_panodil v1_Body_infobox" />
+</Drawable>
+<Drawable name="info1" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <RGB>1 1 1</RGB>
+    <Polytope file="panodil v1_panodil v1_Body_info1" />
+</Drawable>
+<Drawable name="info2" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <RGB>1 1 1</RGB>
+    <Polytope file="panodil v1_panodil v1_Body_info2" />
+</Drawable>
+<Drawable name="info3" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <RGB>1 1 1</RGB>
+    <Polytope file="panodil v1_panodil v1_Body_info3" />
+</Drawable>
+<Drawable name="info4" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <RGB>1 1 1</RGB>
+    <Polytope file="panodil v1_panodil v1_Body_info4" />
+</Drawable>
+<Drawable name="info5" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <RGB>1 1 1</RGB>
+    <Polytope file="panodil v1_panodil v1_Body_info5" />
+</Drawable>
+<Drawable name="info6" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <RGB>1 1 1</RGB>
+    <Polytope file="panodil v1_panodil v1_Body_info6" />
+</Drawable>
+<Drawable name="info7" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <RGB>1 1 1</RGB>
+    <Polytope file="panodil v1_panodil v1_Body_info7" />
+</Drawable>
+<Drawable name="info8" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <RGB>1 1 1</RGB>
+    <Polytope file="panodil v1_panodil v1_Body_info8" />
+</Drawable>
+<Drawable name="info9" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <RGB>1 1 1</RGB>
+    <Polytope file="panodil v1_panodil v1_Body_info9" />
+</Drawable>
+<Drawable name="info10" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <RGB>1 1 1</RGB>
+    <Polytope file="panodil v1_panodil v1_Body_info10" />
+</Drawable>
+<Drawable name="info11" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <RGB>1 1 1</RGB>
+    <Polytope file="panodil v1_panodil v1_Body_info11" />
+</Drawable>
+<Drawable name="info12" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <RGB>1 1 1</RGB>
+    <Polytope file="panodil v1_panodil v1_Body_info12" />
+</Drawable>
+<Drawable name="info13" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <RGB>1 1 1</RGB>
+    <Polytope file="panodil v1_panodil v1_Body_info13" />
+</Drawable>
+<Drawable name="info14" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <RGB>1 1 1</RGB>
+    <Polytope file="panodil v1_panodil v1_Body_info14" />
+</Drawable>
+<Drawable name="info15" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <RGB>1 1 1</RGB>
+    <Polytope file="panodil v1_panodil v1_Body_info15" />
+</Drawable>
+<Drawable name="info16" refframe="Base">
+  	<RPY> 0 0 0</RPY> <Pos> 0 0 0</Pos>
+    <RGB>1 1 1</RGB>
+    <Polytope file="panodil v1_panodil v1_Body_info16" />
+</Drawable>
+
+</SerialDevice>
