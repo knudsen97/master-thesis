@@ -73,7 +73,7 @@ Same procedure as in the simulation except you have to be in another directory
 cd physical-implementation/build
 ```
 
-Before running make sure you have a connection to the UR5e and change the ip accordingly.
+Before running make sure you have a connection to the UR5e and change the IP accordingly.
 
 
 
