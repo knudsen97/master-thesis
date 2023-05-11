@@ -28,34 +28,62 @@ cmake -DBUILD_EIGEN3=ON -D BUILD_LIBREALSENSE=ON -DBUILD_GLEW=ON -DBUILD_GLFW=ON
 ```
 
 ### **OpenCV**
-OpenCV was a standard install with `sudo apt install libopencv-dev` or compiled using the the guide on [OpenCV official website](https://docs.opencv.org/master/d7/d9f/tutorial_linux_install.html).
+OpenCV was a standard install with `sudo apt install libopencv-dev` or compiled using the the guide on the [OpenCV official website](https://docs.opencv.org/master/d7/d9f/tutorial_linux_install.html).
 
 ### **RobWork**
-Robworks was a standard install following the guide on [Robworks official website](https://www.robwork.dk/installation/ubuntu/).
+RobWork was a standard install following the guide on the [RobWork official website](https://www.robwork.dk/installation/ubuntu/).
 
 ## Compiling and running the code
-The inference is seperated from Robworks because of compatibility issues and needs to be compiled seperately. The compiled binarry file need to be located in the binary folder. This can be done with the following commands
+### **Building the binary file for inference**
+The inference is seperated from RobWork because of compatibility issues and needs to be compiled seperately. The compiled binarry file need to be located in the binary folder. This can be done with the following commands
 ```bash
 cd RobWork/cpp/inference_bin_generator/build
 cmake ..
-make
+make -j4
 cp ../bin
 ```
 
+NOTE: This should also be copied to the `physical-implementation/bin` to run on the UR5e.
+
+### **Building and running the simulation**
 Now the project can be built with the following commands
 ```bash
 cd RobWork/cpp/build
 cmake ..
-make
+make -j4
 ```
 
 To run the project, the following command can be used
 ```bash
 cd RobWork/cpp/build
-./main
+./main --model_name <model_name> --file_name <file_name> --folder_name <folder_name> --result_file_name <result_file_name>
 ```
+
+The only flag you should provide is the `--model_name` to choose what model to do inference with. However, the flags mean the following:
+- `--model_name` : Name of the model you want to use. Our final network is called `unet_resnet101_10_all_reg_jit.pt` and can be found [here]() along with our other models.
+- `--file_name` : The prefix for saved files. If empty model name is used.
+- `--folder_name` : The name of the folder to save images in. If empty model name is used.
+- `--result_file_name` : Name for csv file containing results.
+
+The images can be found in the `images` folder.
+
+### **Building and running on the UR5e**
+Same procedure as in the simulation except you have to be in another directory
+```bash
+cd physical-implementation/build
+```
+
+Before running make sure you have a connection to the UR5e and change the ip accordingly.
+
 
 
 ## Synthetic Data Generation 
-There is a bash file that must with the terminal inside the blender folder.
+We have generated our own data using blender on top of the dataset from Zeng et al. found [here](https://vision.princeton.edu/projects/2017/arc/). You can generate your own data by running the `generate_image.sh` in the `blender` folder. Run the following commands to see how to call the script.
+
+```bash
+cd blender
+chmod +x generate_image.sh
+./generate_image.sh -h
+```
+
 Items can be added or removed by removing them from items collection in `synthetic_data_generator.blend` which must be opened with blender.

@@ -42,7 +42,7 @@ fi
 # Generate images
 for i in $(seq 0 $(($images-1)))
 do
-    blender -b synthetic_data_generator.blend --python /home/claus/Documents/sdu/9sem/master/code/master-thesis/blender/blender_script/blender_render_script.py -f 40,41
+    blender -b synthetic_data_generator.blend --python $PWD/blender_script/blender_render_script.py -f 40,41
     green='\033[0;32m'
     no_color='\033[0m'
     printf "${green}$((($i+1)*2)) images generated${no_color}\n"
