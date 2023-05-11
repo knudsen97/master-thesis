@@ -60,7 +60,7 @@ cd RobWork/cpp/build
 ```
 
 The only flag you should provide is the `--model_name` to choose what model to do inference with. However, the flags mean the following:
-- `--model_name` : Name of the model you want to use. Our final network is called `unet_resnet101_10_all_reg_jit.pt` and can be found [here]() along with our other models.
+- `--model_name` : Name of the model you want to use. Our final network is called `unet_resnet101_10_all_reg_jit.pt` and can be found [here](https://drive.google.com/drive/folders/1k8grBPCohdnRlkcbSJ07po6zcwHIDbfp?usp=sharing) along with our other models.
 - `--file_name` : The prefix for saved files. If empty model name is used.
 - `--folder_name` : The name of the folder to save images in. If empty model name is used.
 - `--result_file_name` : Name for csv file containing results.
