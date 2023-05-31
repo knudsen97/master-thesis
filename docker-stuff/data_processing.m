@@ -27,6 +27,10 @@ recalls = [];
 precisions = [];
 f1s = [];
 
+title_font_size = 16;
+axis_font_size = 15.5;
+legend_font_size = 16;
+
 for file_idx = 1:length(files)
     fig1 = ((file_idx-1)*3+1);
     fig2 = ((file_idx-1)*3+2);
@@ -67,53 +71,59 @@ for file_idx = 1:length(files)
     precisions = [precisions; test_precision(end)];
     f1s = [f1s; 2*(test_precision(end)*test_recall(end))/(test_precision(end)+test_recall(end))];
 
+    lr1 = num2str(lr);
+   
     % Plot train and test precision/recall
-    % figure(fig1)
-    % hold on
-    % plot(1:1:epochs_elapsed, train_losses)
-    % plot(1:1:epochs_elapsed, test_losses)
-    % title(compose('Train and Test Losses, Grid Search Test %d', file_idx))
-    % 
-    % legend('Train loss', 'Test loss')
-    % xlabel('# of epochs')
-    % ylabel('Loss')
-    % hold off
-    % 
-    % figure(fig2)
-    % hold on
-    % plot(1:1:epochs_elapsed, train_recall)
-    % plot(1:1:epochs_elapsed, test_recall)
-    % title(compose('Train and Test Recall, Grid Search Test %d', file_idx))
-    % legend('Train recall', 'Test recall')
-    % xlabel('# of epochs')
-    % ylabel('Recall [%]')
-    % [minA,maxA] = bounds(train_recall);
-    % ylim([minA-0.05 1])
-    % % xlim([0 30])
-    % hold off
-    % 
-    % figure(fig3)
-    % hold on
-    % plot(1:1:epochs_elapsed, train_precision)
-    % plot(1:1:epochs_elapsed, test_precision)
-    % title(compose('Train and Test Precision, Grid Search Test %d', file_idx))
-    % legend('Train precision', 'Test precision')
-    % 
-    % xlabel('# of epochs')
-    % ylabel('Precision [%]')
-    % [minA,maxA] = bounds(train_precision);
-    % ylim([minA-0.05 1])
-    % % xlim([0 30])
-    % hold off
-    % drawnow
-    % str1 = string(compose('figures_grid_search/loss_%d.pdf', file_idx));
-    % str2 = string(compose('figures_grid_search/recall_%d.pdf', file_idx));
-    % str3 = string(compose('figures_grid_search/precision_%d.pdf', file_idx));
-    % 
-    % exportgraphics(figure(fig1), str1, 'BackgroundColor', 'none')
-    % exportgraphics(figure(fig2), str2, 'BackgroundColor', 'none')
-    % exportgraphics(figure(fig3), str3, 'BackgroundColor', 'none')
-    % close all
+    figure(fig1)
+    hold on
+    plot(1:1:epochs_elapsed, train_losses)
+    plot(1:1:epochs_elapsed, test_losses)
+    title(compose('Train and Validation Losses\nGrid Search Test %d (lr=%s)', file_idx, lr1),'FontSize', title_font_size)
+    legend('Train loss', 'Validation loss', 'FontSize', legend_font_size)
+    xlabel('# of epochs')%, 'FontSize', axis_font_size)
+    ylabel('Loss')%, 'FontSize', axis_font_size)
+    set(gca,'FontSize', axis_font_size)
+
+    hold off
+    
+    figure(fig2)
+    hold on
+    plot(1:1:epochs_elapsed, train_recall)
+    plot(1:1:epochs_elapsed, test_recall)
+    title(compose('Train and Validation Recall\nGrid Search Test %d (lr=%s)', file_idx, lr1), 'FontSize', title_font_size)
+    legend('Train recall', 'Validation recall', 'FontSize', legend_font_size)
+    xlabel('# of epochs')%, 'FontSize', axis_font_size)
+    ylabel('Recall [%]')%, 'FontSize', axis_font_size)
+    set(gca,'FontSize', axis_font_size)
+
+    [minA,maxA] = bounds(train_recall);
+    ylim([minA-0.05 1])
+    % xlim([0 30])
+    hold off
+    
+    figure(fig3)
+    hold on
+    plot(1:1:epochs_elapsed, train_precision)
+    plot(1:1:epochs_elapsed, test_precision)
+    title(compose('Train and Validation Precision\nGrid Search Test %d (lr=%s)', file_idx, lr1), 'FontSize', title_font_size)
+    legend('Train precision', 'Validation precision', 'FontSize', legend_font_size)
+    xlabel('# of epochs')%, 'FontSize', axis_font_size)
+    ylabel('Precision [%]')%, 'FontSize', axis_font_size)
+    set(gca,'FontSize', axis_font_size)
+
+    [minA,maxA] = bounds(train_precision);
+    ylim([minA-0.05 1])
+    % xlim([0 30])
+    hold off
+    drawnow
+    str1 = string(compose('figures_grid_search/loss_%d.pdf', file_idx));
+    str2 = string(compose('figures_grid_search/recall_%d.pdf', file_idx));
+    str3 = string(compose('figures_grid_search/precision_%d.pdf', file_idx));
+    
+    exportgraphics(figure(fig1), str1, 'BackgroundColor', 'none')
+    exportgraphics(figure(fig2), str2, 'BackgroundColor', 'none')
+    exportgraphics(figure(fig3), str3, 'BackgroundColor', 'none')
+    close all
 
 end
 total_epochs_elapsed
@@ -131,9 +141,16 @@ min(delta_loss)
 %% Read single file
 clc;clear;close all;
 
-header = 'Batch Normalization';
-file_idx = 10;
-id = '10_batchnorm';
+title_font_size = 16;
+axis_font_size = 15.5;
+legend_font_size = 16;
+
+print = 0;
+
+header = 'Fine-Tuning';
+
+file_idx = '10.3';
+id = '10_all_reg';
 filename = append('results/results_', id, '.csv');
 
 % Open CSV file and convert to array
@@ -146,6 +163,7 @@ hyperparameters = A(1,1:end-1);
 epochs = hyperparameters(1);
 encoder_depth = hyperparameters(2);
 lr = hyperparameters(3);
+lr1 = num2str(lr);
 batch_size = hyperparameters(4);
 l2_penalization = hyperparameters(5); % Weight decay
 A = A(3:end,:);
@@ -182,23 +200,27 @@ figure(1)
 hold on
 plot(1:1:epochs_elapsed, train_losses)
 plot(1:1:epochs_elapsed, test_losses)
-title(compose('Train and Test Losses, Baseline %d with %s', file_idx, header))
+title(compose('Train and Validation Losses\n Model %s %s (lr=%s)', file_idx, header, lr1), 'FontSize', title_font_size)
 
-legend('Train loss', 'Test loss')
+legend('Train loss', 'Validation loss', 'FontSize', legend_font_size)
 xlabel('# of epochs')
 ylabel('Loss')
+set(gca,'FontSize', axis_font_size)
+
 hold off
 
 figure(2)
 hold on
 plot(1:1:epochs_elapsed, train_recall)
 plot(1:1:epochs_elapsed, test_recall)
-title(compose('Train and Test Recall, Baseline %d with %s', file_idx, header))
-legend('Train recall', 'Test recall')
+title(compose('Train and Validation Recall\nModel %s %s (lr=%s)', file_idx, header, lr1), 'FontSize', title_font_size)
+legend('Train recall', 'Validation recall', 'FontSize', legend_font_size)
 xlabel('# of epochs')
 ylabel('Recall [%]')
+set(gca,'FontSize', axis_font_size)
+
 [minA,maxA] = bounds(train_recall);
-ylim([minA-0.05 1])
+ylim([minA-0.05 1.01])
 % xlim([0 30])
 hold off
 
@@ -206,13 +228,15 @@ figure(3)
 hold on
 plot(1:1:epochs_elapsed, train_precision)
 plot(1:1:epochs_elapsed, test_precision)
-title(compose('Train and Test Precision, Baseline %d with %s', file_idx, header))
-legend('Train precision', 'Test precision')
+title(compose('Train and Validation Precision\nModel %s %s (lr=%s)', file_idx, header, lr1), 'FontSize', title_font_size)
+legend('Train precision', 'Validation precision', 'FontSize', legend_font_size)
 
 xlabel('# of epochs')
 ylabel('Precision [%]')
+set(gca,'FontSize', axis_font_size)
+
 [minA,maxA] = bounds(train_precision);
-ylim([minA-0.05 1])
+ylim([minA-0.05 1.01])
 % xlim([0 30])
 hold off
 drawnow
@@ -232,7 +256,9 @@ str1 = string(compose('figures/loss_%s.pdf', id));
 str2 = string(compose('figures/recall_%s.pdf', id));
 str3 = string(compose('figures/precision_%s.pdf', id));
 
-exportgraphics(figure(1), str1, 'BackgroundColor', 'none')
-exportgraphics(figure(2), str2, 'BackgroundColor', 'none')
-exportgraphics(figure(3), str3, 'BackgroundColor', 'none')
-% close all
+if print
+    exportgraphics(figure(1), str1, 'BackgroundColor', 'none')
+    exportgraphics(figure(2), str2, 'BackgroundColor', 'none')
+    exportgraphics(figure(3), str3, 'BackgroundColor', 'none')
+    close all
+end
